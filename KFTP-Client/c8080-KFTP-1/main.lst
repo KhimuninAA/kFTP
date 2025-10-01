@@ -1,0 +1,2394 @@
+# file opened: main.asm
+   1  0000                  device zxspectrum48 ; There is no ZX Spectrum, it is needed for the sjasmplus assembler.
+   2  0000              ordos_wnd equ 49110
+   3  0000              ordos_sdma equ 49104
+   4  0000              ordos_watf equ 49098
+   5  0000              ordos_wfile equ 49143
+   6  0000              ordos_stop equ 49122
+   7  0000              ordos_dirm equ 49128
+   8  0000              ordos_start equ 49149
+   9  0000              ordos_mxdsk equ 49080
+  10  0000              ordos_rmax equ 49089
+  11  0000              ordos_wdisk equ 49119
+  12  0000              fontaddress equ 62417
+  13  0000              inverceaddress equ 62419
+  14  0000              printhexa equ 63509
+  15  0000              printchata equ 63503
+  16  0000              printchatc equ 63497
+  17  0000              writebyteinothermem equ 63545
+  18  0000              setposcursor equ 63548
+  19  0000              getposcursor equ 63518
+  20  0000              printhlstr equ 63512
+  21  0000              getkeyboardchara equ 63491
+  22  0000              getkeyboardstatea equ 63506
+  23  0000              getkeyboardcodea equ 63515
+  24  0000              ; 12 void ordos_wnd() __address(0xbfd6);
+  25  0000              ; 13 ///запись н/адреса буфера имени файла
+  26  0000              ; 14 void ordos_sdma() __address(0xbfd0);
+  27  0000              ; 15 ///запись адресов (н/к) блока озу
+  28  0000              ; 16 void ordos_watf() __address(0xbfca);
+  29  0000              ; 17 ///пп.записи файла на диск
+  30  0000              ; 18 void ordos_wfile() __address(0xbff7);
+  31  0000              ; 19 ///запись стоп-слова в диск
+  32  0000              ; 20 void ordos_stop() __address(0xbfe2);
+  33  0000              ; 21 /// вывод каталога диска в буфер
+  34  0000              ; 22 void ordos_dirm() __address(0xbfe8);
+  35  0000              ; 23 /// вход в ос "ordos"
+  36  0000              ; 24 void ordos_start() __address(0xbffd);
+  37  0000              ; 25 /// конеч.адрес программ.на диске (FF адрес стоп байта) HL
+  38  0000              ; 26 void ordos_mxdsk() __address(0xbfb8);
+  39  0000              ; 27 /// чтение максимального адреса диска HL
+  40  0000              ; 28 void ordos_rmax() __address(0xbfc1);
+  41  0000              ; 29 /// запись байта в диск HL-addr A-byte
+  42  0000              ; 30 void ordos_wdisk() __address(0xbfdf);
+  43  0000              ; 12 extern uint16_t fontAddress __address(0xF3D1);
+  44  0000              ; 13 ///ячейка, хранящая признак прямого (00Н) вывода (светлые символы на темном фоне) или инверсного (0FFH) вывода (темные символы на светлом фоне)
+  45  0000              ; 14 extern uint16_t inverceAddress __address(0xF3D3);
+  46  0000              ; 15
+  47  0000              ; 16 ///-----* Функции Монитора *-------
+  48  0000              ; 17 ///Вывод на экран HEX из регистра A
+  49  0000              ; 18 void printHexA() __address(0xF815);
+  50  0000              ; 19 ///Вывод символа на экран из регистра A
+  51  0000              ; 20 void printChatA() __address(0xF80F);
+  52  0000              ; 21 ///Вывод символа на экран из регистра С
+  53  0000              ; 22 void printChatC() __address(0xF809);
+  54  0000              ; 23 ///ЗАПИСЬ БАЙТА В ДОП. СТРАНИЦУ HL — АДРЕСА — N СТРАНИЦЫ (0-3) C — ЗАПИСЫВАЕМЫЙ БАЙТ
+  55  0000              ; 24 void writeByteInOtherMem() __address(0xF839);
+  56  0000              ; 25 ///УСТАНОВКА КУРСОРА ВХ. Н — НОМЕР СТРОКИ — Y L — НОМЕР ПОЗИЦИИ — X
+  57  0000              ; 26 void setPosCursor() __address(0xF83C);
+  58  0000              ; 27 ///ЗАПРОС ПОЛОЖЕНИЯ КУРСОРА Н - НОМЕР СТРОКИ - Y , L - НОМЕР ПОЗИЦИИ - X
+  59  0000              ; 28 void getPosCursor() __address(0xF81E);
+  60  0000              ; 29 ///ВЫВОД НА ЭКРАН СООБЩЕНИЯ ВХ.: HL- - АДРЕС НАЧАЛА КОНЕЧНЫЙ БАЙТ - 00Н
+  61  0000              ; 30 void printHLStr() __address(0xF818);
+  62  0000              ; 31
+  63  0000              ; 32 ///ВВОД C СИМВОЛА С КЛАВИАТУРЫ А - ВВЕДЕННЫЙ СИМВОЛ
+  64  0000              ; 33 void getKeyboardCharA() __address(0xF803);
+  65  0000              ; 34 ///ОПРОС СОСТОЯНИЯ КЛАВИАТУРЫ А = 00Н - НЕ НАЖАТА , А = 0FFH - НАЖАТА
+  66  0000              ; 35 void getKeyboardStateA() __address(0xF812);
+  67  0000              ; 36 ///ВВОД КОДА НАЖАТОЙ КЛАВИШИ А = 0FFH - НЕ НАЖАТА А = 0FEH - РУС/ЛАТ ИНАЧЕ - КОД КЛАВИШИ
+  68  0000              ; 37 void getKeyboardCodeA() __address(0xF81B);
+  69  0000
+  70  0000                  org 0x00F0
+  71  00F0
+  72  00F0              ; 19 uint8_t appName[] = {'K','F','T','P','$',' ',' ',' '};
+  73  00F0              appname:
+  74  00F0 4B           	db 75
+  75  00F1 46           	db 70
+  76  00F2 54           	db 84
+  77  00F3 50           	db 80
+  78  00F4 24           	db 36
+  79  00F5 20           	db 32
+  80  00F6 20           	db 32
+  81  00F7 20           	db 32
+  82  00F8
+  83  00F8
+  84  00F8 00 01            DB 0x00, 0x01
+  85  00FA
+  86  00FA 00 0B            DB 0x00, 0x0B
+  87  00FC
+  88  00FC 00 00 00 00      DB 0x00, 0x00, 0x00, 0x00
+  89  0100
+  90  0100              ; 30 void main(){
+  91  0100              main:
+  92  0100              ; 31     updateDiskList();
+  93  0100 CD 63 03     	call updatedisklist
+  94  0103              ; 32
+  95  0103              ; 33     updateRootUI();
+  96  0103 CD 6D 01     	call updaterootui
+  97  0106              ; 34
+  98  0106              ; 35     updateRootDataUI();
+  99  0106 CD 6A 01     	call updaterootdataui
+ 100  0109              ; 36
+ 101  0109              ; 37     //Бесконечный цикл. Что бы увидеть результат
+ 102  0109              ; 38     for (;;) {
+ 103  0109              l_1:
+ 104  0109              ; 39         getKeyboardCodeA();
+ 105  0109 CD 1B F8     	call getkeyboardcodea
+ 106  010C              ; 40         l = a; //Save key
+ 107  010C 6F           	ld l, a
+ 108  010D              ; 41         if ((a = rootViewOldKey) != l) {
+ 109  010D 3A 28 09     	ld a, (rootviewoldkey)
+ 110  0110 BD           	cp l
+ 111  0111 CA 67 01     	jp z, l_3
+ 112  0114              ; 42             a = l; //Load key
+ 113  0114 7D           	ld a, l
+ 114  0115              ; 43             rootViewOldKey = a;
+ 115  0115 32 28 09     	ld (rootviewoldkey), a
+ 116  0118              ; 44             push_pop(hl) {
+ 117  0118 E5           	push hl
+ 118  0119              ; 45                 a = l; //Load key
+ 119  0119 7D           	ld a, l
+ 120  011A              ; 46                 if (a != 0xFF) {
+ 121  011A FE FF        	cp 255
+ 122  011C CA 66 01     	jp z, l_5
+ 123  011F              ; 47                     /// Hot ley
+ 124  011F              ; 48                     if (a == 0x03) { //F4 quit ordos
+ 125  011F FE 03        	cp 3
+ 126  0121 C2 2A 01     	jp nz, l_7
+ 127  0124              ; 49                         ordos_start();
+ 128  0124 CD FD BF     	call ordos_start
+ 129  0127 C3 46 01     	jp l_8
+ 130  012A              l_7:
+ 131  012A              ; 50                     } else if (a == 0x02) { //F3 Open FTP settings
+ 132  012A FE 02        	cp 2
+ 133  012C C2 35 01     	jp nz, l_9
+ 134  012F              ; 51                         needOpenFTPSettingsEditView();
+ 135  012F CD E9 04     	call needopenftpsettingseditview
+ 136  0132 C3 46 01     	jp l_10
+ 137  0135              l_9:
+ 138  0135              ; 52                     } else if (a == 'C') { // Button C
+ 139  0135 FE 43        	cp 67
+ 140  0137 C2 46 01     	jp nz, l_11
+ 141  013A              ; 53                         createTestFile();
+ 142  013A CD 89 09     	call createtestfile
+ 143  013D              ; 54                         updateDiskList();
+ 144  013D CD 63 03     	call updatedisklist
+ 145  0140              ; 55                         updateRootUI();
+ 146  0140 CD 6D 01     	call updaterootui
+ 147  0143              ; 56                         showDiskList();
+ 148  0143 CD 73 03     	call showdisklist
+ 149  0146              l_11:
+ 150  0146              l_10:
+ 151  0146              l_8:
+ 152  0146              ; 57                     }
+ 153  0146              ; 58
+ 154  0146              ; 59                     /// View's
+ 155  0146              ; 60                     if ((a = rootViewCurrentView) == rootViewCurrentDiskView) {
+ 156  0146 3A E7 08     	ld a, (rootviewcurrentview)
+ 157  0149 B7           	or a
+ 158  014A C2 57 01     	jp nz, l_13
+ 159  014D              ; 61                         a = l; //Load key
+ 160  014D 7D           	ld a, l
+ 161  014E              ; 62                         diskViewKeyA();
+ 162  014E CD 13 04     	call diskviewkeya
+ 163  0151              ; 63                         showDiskList(); //Refresh
+ 164  0151 CD 73 03     	call showdisklist
+ 165  0154 C3 66 01     	jp l_14
+ 166  0157              l_13:
+ 167  0157              ; 64                     } else if ((a = rootViewCurrentView) == rootViewCurrentFTPSettingsEditView) {
+ 168  0157 3A E7 08     	ld a, (rootviewcurrentview)
+ 169  015A FE 02        	cp 2
+ 170  015C C2 66 01     	jp nz, l_15
+ 171  015F              ; 65                         a = l; //Load key
+ 172  015F 7D           	ld a, l
+ 173  0160              ; 66                         ftpSettingsEditViewKeyA();
+ 174  0160 CD 0F 05     	call ftpsettingseditviewkeya
+ 175  0163              ; 67                         ftpSettingsEditViewDataUpdate();
+ 176  0163 CD 11 07     	call ftpsettingseditviewdataupdate
+ 177  0166              l_15:
+ 178  0166              l_14:
+ 179  0166              l_5:
+ 180  0166 E1           	pop hl
+ 181  0167              l_3:
+ 182  0167 C3 09 01     	jp l_1
+ 183  016A              ; 68                     }
+ 184  016A              ; 69                     //printHexA();
+ 185  016A              ; 70                 }
+ 186  016A              ; 71             }
+ 187  016A              ; 72         }
+ 188  016A              ; 73     }
+ 189  016A              ; 74 }
+ 190  016A              ; 75
+ 191  016A              ; 76 void updateRootDataUI() {
+ 192  016A              updaterootdataui:
+ 193  016A              ; 77     showDiskList();
+ 194  016A C3 73 03     	jp showdisklist
+ 195  016D              ; 78 }
+ 196  016D              ; 79
+ 197  016D              ; 80 void updateRootUI() {
+ 198  016D              updaterootui:
+ 199  016D              ; 81     clearScreen();
+ 200  016D CD C3 02     	call clearscreen
+ 201  0170              ; 82
+ 202  0170              ; 83     showWiFiView();
+ 203  0170 CD 54 02     	call showwifiview
+ 204  0173              ; 84     showFtpView();
+ 205  0173 CD CD 01     	call showftpview
+ 206  0176              ; 85     diskView();
+ 207  0176 CD A6 01     	call diskview
+ 208  0179              ; 86     ftpView();
+ 209  0179 CD 7F 01     	call ftpview
+ 210  017C              ; 87
+ 211  017C              ; 88     showHelpStr();
+ 212  017C C3 77 04     	jp showhelpstr
+ 213  017F              ; 89 }
+ 214  017F              ; 90
+ 215  017F              ; 91 void ftpView() {
+ 216  017F              ftpview:
+ 217  017F              ; 92     drowRectX = (a = ftpViewX);
+ 218  017F 3A DA 08     	ld a, (ftpviewx)
+ 219  0182 32 5D 03     	ld (drowrectx), a
+ 220  0185              ; 93     drowRectY = (a = ftpViewY);
+ 221  0185 3A DB 08     	ld a, (ftpviewy)
+ 222  0188 32 5E 03     	ld (drowrecty), a
+ 223  018B              ; 94     drowRectEndX = (a = ftpViewEX);
+ 224  018B 3A DC 08     	ld a, (ftpviewex)
+ 225  018E 32 5F 03     	ld (drowrectendx), a
+ 226  0191              ; 95     drowRectEndY = (a = ftpViewEY);
+ 227  0191 3A DD 08     	ld a, (ftpviewey)
+ 228  0194 32 60 03     	ld (drowrectendy), a
+ 229  0197              ; 96     drowRect();
+ 230  0197 CD CD 02     	call drowrect
+ 231  019A              ; 97
+ 232  019A              ; 98     hl = ftpLabelPos;
+ 233  019A 2A DE 08     	ld hl, (ftplabelpos)
+ 234  019D              ; 99     setPosCursor();
+ 235  019D CD 3C F8     	call setposcursor
+ 236  01A0              ; 100     hl = ftpLabel;
+ 237  01A0 21 E0 08     	ld hl, ftplabel
+ 238  01A3              ; 101     printHLStr();
+ 239  01A3 C3 18 F8     	jp printhlstr
+ 240  01A6              ; 102 }
+ 241  01A6              ; 103
+ 242  01A6              ; 104 void diskView() {
+ 243  01A6              diskview:
+ 244  01A6              ; 105     drowRectX = (a = diskViewX);
+ 245  01A6 3A B4 08     	ld a, (diskviewx)
+ 246  01A9 32 5D 03     	ld (drowrectx), a
+ 247  01AC              ; 106     drowRectY = (a = diskViewY);
+ 248  01AC 3A B5 08     	ld a, (diskviewy)
+ 249  01AF 32 5E 03     	ld (drowrecty), a
+ 250  01B2              ; 107     drowRectEndX = (a = diskViewEX);
+ 251  01B2 3A B6 08     	ld a, (diskviewex)
+ 252  01B5 32 5F 03     	ld (drowrectendx), a
+ 253  01B8              ; 108     drowRectEndY = (a = diskViewEY);
+ 254  01B8 3A B7 08     	ld a, (diskviewey)
+ 255  01BB 32 60 03     	ld (drowrectendy), a
+ 256  01BE              ; 109     drowRect();
+ 257  01BE CD CD 02     	call drowrect
+ 258  01C1              ; 110
+ 259  01C1              ; 111     hl = diskViewLabelPos;
+ 260  01C1 2A B8 08     	ld hl, (diskviewlabelpos)
+ 261  01C4              ; 112     setPosCursor();
+ 262  01C4 CD 3C F8     	call setposcursor
+ 263  01C7              ; 113     hl = diskViewLabel;
+ 264  01C7 21 BA 08     	ld hl, diskviewlabel
+ 265  01CA              ; 114     printHLStr();
+ 266  01CA C3 18 F8     	jp printhlstr
+ 267  01CD              ; 115 }
+ 268  01CD              ; 116
+ 269  01CD              ; 117 void showFtpView() {
+ 270  01CD              showftpview:
+ 271  01CD              ; 118     drowRectX = (a = ftpSettingsViewX);
+ 272  01CD 3A 45 08     	ld a, (ftpsettingsviewx)
+ 273  01D0 32 5D 03     	ld (drowrectx), a
+ 274  01D3              ; 119     drowRectY = (a = ftpSettingsViewY);
+ 275  01D3 3A 46 08     	ld a, (ftpsettingsviewy)
+ 276  01D6 32 5E 03     	ld (drowrecty), a
+ 277  01D9              ; 120     drowRectEndX = (a = ftpSettingsViewEX);
+ 278  01D9 3A 47 08     	ld a, (ftpsettingsviewex)
+ 279  01DC 32 5F 03     	ld (drowrectendx), a
+ 280  01DF              ; 121     drowRectEndY = (a = ftpSettingsViewEY);
+ 281  01DF 3A 48 08     	ld a, (ftpsettingsviewey)
+ 282  01E2 32 60 03     	ld (drowrectendy), a
+ 283  01E5              ; 122     drowRect();
+ 284  01E5 CD CD 02     	call drowrect
+ 285  01E8              ; 123
+ 286  01E8              ; 124     hl = ftpSettingsLabelPos;
+ 287  01E8 2A 49 08     	ld hl, (ftpsettingslabelpos)
+ 288  01EB              ; 125     setPosCursor();
+ 289  01EB CD 3C F8     	call setposcursor
+ 290  01EE              ; 126     hl = ftpSettingsLabel;
+ 291  01EE 21 4B 08     	ld hl, ftpsettingslabel
+ 292  01F1              ; 127     printHLStr();
+ 293  01F1 CD 18 F8     	call printhlstr
+ 294  01F4              ; 128
+ 295  01F4              ; 129     hl = ftpSettingsStatusLabelPos;
+ 296  01F4 2A 70 08     	ld hl, (ftpsettingsstatuslabelpos)
+ 297  01F7              ; 130     setPosCursor();
+ 298  01F7 CD 3C F8     	call setposcursor
+ 299  01FA              ; 131     hl = ftpSettingsStatusLabel;
+ 300  01FA 21 72 08     	ld hl, ftpsettingsstatuslabel
+ 301  01FD              ; 132     printHLStr();
+ 302  01FD CD 18 F8     	call printhlstr
+ 303  0200              ; 133
+ 304  0200              ; 134     hl = ftpSettingsIpLabelPos;
+ 305  0200 2A 5A 08     	ld hl, (ftpsettingsiplabelpos)
+ 306  0203              ; 135     setPosCursor();
+ 307  0203 CD 3C F8     	call setposcursor
+ 308  0206              ; 136     hl = ftpSettingsIpLabel;
+ 309  0206 21 5C 08     	ld hl, ftpsettingsiplabel
+ 310  0209              ; 137     printHLStr();
+ 311  0209 CD 18 F8     	call printhlstr
+ 312  020C              ; 138
+ 313  020C              ; 139     hl = ftpSettingsPortLabelPos;
+ 314  020C 2A 60 08     	ld hl, (ftpsettingsportlabelpos)
+ 315  020F              ; 140     setPosCursor();
+ 316  020F CD 3C F8     	call setposcursor
+ 317  0212              ; 141     hl = ftpSettingsPortLabel;
+ 318  0212 21 62 08     	ld hl, ftpsettingsportlabel
+ 319  0215              ; 142     printHLStr();
+ 320  0215 CD 18 F8     	call printhlstr
+ 321  0218              ; 143
+ 322  0218              ; 144     hl = ftpSettingsUserLabelPos;
+ 323  0218 2A 68 08     	ld hl, (ftpsettingsuserlabelpos)
+ 324  021B              ; 145     setPosCursor();
+ 325  021B CD 3C F8     	call setposcursor
+ 326  021E              ; 146     hl = ftpSettingsUserLabel;
+ 327  021E 21 6A 08     	ld hl, ftpsettingsuserlabel
+ 328  0221              ; 147     printHLStr();
+ 329  0221 CD 18 F8     	call printhlstr
+ 330  0224              ; 148
+ 331  0224              ; 149     //Value
+ 332  0224              ; 150     hl = ftpSettingsIpValuePos;
+ 333  0224 2A 7A 08     	ld hl, (ftpsettingsipvaluepos)
+ 334  0227              ; 151     setPosCursor();
+ 335  0227 CD 3C F8     	call setposcursor
+ 336  022A              ; 152     hl = ftpSettingsIpValue;
+ 337  022A 21 7C 08     	ld hl, ftpsettingsipvalue
+ 338  022D              ; 153     printHLStr();
+ 339  022D CD 18 F8     	call printhlstr
+ 340  0230              ; 154
+ 341  0230              ; 155     hl = ftpSettingsPortValuePos;
+ 342  0230 2A 8C 08     	ld hl, (ftpsettingsportvaluepos)
+ 343  0233              ; 156     setPosCursor();
+ 344  0233 CD 3C F8     	call setposcursor
+ 345  0236              ; 157     hl = ftpSettingsPortValue;
+ 346  0236 21 8E 08     	ld hl, ftpsettingsportvalue
+ 347  0239              ; 158     printHLStr();
+ 348  0239 CD 18 F8     	call printhlstr
+ 349  023C              ; 159
+ 350  023C              ; 160     hl = ftpSettingsStatusValuePos;
+ 351  023C 2A 94 08     	ld hl, (ftpsettingsstatusvaluepos)
+ 352  023F              ; 161     setPosCursor();
+ 353  023F CD 3C F8     	call setposcursor
+ 354  0242              ; 162     hl = ftpSettingsStatusValue;
+ 355  0242 21 96 08     	ld hl, ftpsettingsstatusvalue
+ 356  0245              ; 163     printHLStr();
+ 357  0245 CD 18 F8     	call printhlstr
+ 358  0248              ; 164
+ 359  0248              ; 165     hl = ftpSettingsUserValuePos;
+ 360  0248 2A A2 08     	ld hl, (ftpsettingsuservaluepos)
+ 361  024B              ; 166     setPosCursor();
+ 362  024B CD 3C F8     	call setposcursor
+ 363  024E              ; 167     hl = ftpSettingsUserValue;
+ 364  024E 21 A4 08     	ld hl, ftpsettingsuservalue
+ 365  0251              ; 168     printHLStr();
+ 366  0251 C3 18 F8     	jp printhlstr
+ 367  0254              ; 169 }
+ 368  0254              ; 170
+ 369  0254              ; 171 void showWiFiView() {
+ 370  0254              showwifiview:
+ 371  0254              ; 172     drowRectX = (a = wifiSettingsViewX);
+ 372  0254 3A D4 07     	ld a, (wifisettingsviewx)
+ 373  0257 32 5D 03     	ld (drowrectx), a
+ 374  025A              ; 173     drowRectY = (a = wifiSettingsViewY);
+ 375  025A 3A D5 07     	ld a, (wifisettingsviewy)
+ 376  025D 32 5E 03     	ld (drowrecty), a
+ 377  0260              ; 174     drowRectEndX = (a = wifiSettingsViewEX);
+ 378  0260 3A D6 07     	ld a, (wifisettingsviewex)
+ 379  0263 32 5F 03     	ld (drowrectendx), a
+ 380  0266              ; 175     drowRectEndY = (a = wifiSettingsViewEY);
+ 381  0266 3A D7 07     	ld a, (wifisettingsviewey)
+ 382  0269 32 60 03     	ld (drowrectendy), a
+ 383  026C              ; 176     drowRect();
+ 384  026C CD CD 02     	call drowrect
+ 385  026F              ; 177
+ 386  026F              ; 178     hl = wifiSettingsPos;
+ 387  026F 2A D8 07     	ld hl, (wifisettingspos)
+ 388  0272              ; 179     setPosCursor();
+ 389  0272 CD 3C F8     	call setposcursor
+ 390  0275              ; 180     hl = wifiSettingsLabel;
+ 391  0275 21 DA 07     	ld hl, wifisettingslabel
+ 392  0278              ; 181     printHLStr();
+ 393  0278 CD 18 F8     	call printhlstr
+ 394  027B              ; 182
+ 395  027B              ; 183     hl = wifiSettingsSsidLabelPos;
+ 396  027B 2A FD 07     	ld hl, (wifisettingsssidlabelpos)
+ 397  027E              ; 184     setPosCursor();
+ 398  027E CD 3C F8     	call setposcursor
+ 399  0281              ; 185     hl = wifiSettingsSsidLabel;
+ 400  0281 21 EB 07     	ld hl, wifisettingsssidlabel
+ 401  0284              ; 186     printHLStr();
+ 402  0284 CD 18 F8     	call printhlstr
+ 403  0287              ; 187
+ 404  0287              ; 188     hl = wifiSettingsIpLabelPos;
+ 405  0287 2A FF 07     	ld hl, (wifisettingsiplabelpos)
+ 406  028A              ; 189     setPosCursor();
+ 407  028A CD 3C F8     	call setposcursor
+ 408  028D              ; 190     hl = wifiSettingsIpLabel;
+ 409  028D 21 F1 07     	ld hl, wifisettingsiplabel
+ 410  0290              ; 191     printHLStr();
+ 411  0290 CD 18 F8     	call printhlstr
+ 412  0293              ; 192
+ 413  0293              ; 193     hl = wifiSettingsMacLabelPos;
+ 414  0293 2A 01 08     	ld hl, (wifisettingsmaclabelpos)
+ 415  0296              ; 194     setPosCursor();
+ 416  0296 CD 3C F8     	call setposcursor
+ 417  0299              ; 195     hl = wifiSettingsMacLabel;
+ 418  0299 21 F7 07     	ld hl, wifisettingsmaclabel
+ 419  029C              ; 196     printHLStr();
+ 420  029C CD 18 F8     	call printhlstr
+ 421  029F              ; 197
+ 422  029F              ; 198     hl = wifiSettingsMacValPos;
+ 423  029F 2A 2F 08     	ld hl, (wifisettingsmacvalpos)
+ 424  02A2              ; 199     setPosCursor();
+ 425  02A2 CD 3C F8     	call setposcursor
+ 426  02A5              ; 200     hl = wifiSettingsMacVal;
+ 427  02A5 21 31 08     	ld hl, wifisettingsmacval
+ 428  02A8              ; 201     printHLStr();
+ 429  02A8 CD 18 F8     	call printhlstr
+ 430  02AB              ; 202
+ 431  02AB              ; 203     hl = wifiSettingsIpValPos;
+ 432  02AB 2A 19 08     	ld hl, (wifisettingsipvalpos)
+ 433  02AE              ; 204     setPosCursor();
+ 434  02AE CD 3C F8     	call setposcursor
+ 435  02B1              ; 205     hl = wifiSettingsIpVal;
+ 436  02B1 21 1B 08     	ld hl, wifisettingsipval
+ 437  02B4              ; 206     printHLStr();
+ 438  02B4 CD 18 F8     	call printhlstr
+ 439  02B7              ; 207
+ 440  02B7              ; 208     hl = wifiSettingsSsidValPos;
+ 441  02B7 2A 03 08     	ld hl, (wifisettingsssidvalpos)
+ 442  02BA              ; 209     setPosCursor();
+ 443  02BA CD 3C F8     	call setposcursor
+ 444  02BD              ; 210     hl = wifiSettingsSsidVal;
+ 445  02BD 21 05 08     	ld hl, wifisettingsssidval
+ 446  02C0              ; 211     printHLStr();
+ 447  02C0 C3 18 F8     	jp printhlstr
+ 448  02C3              ; 212 }
+ 449  02C3              ; 213
+ 450  02C3              ; 214 void clearScreen() {
+ 451  02C3              clearscreen:
+ 452  02C3              ; 215     c = 0x1B;
+ 453  02C3 0E 1B        	ld c, 27
+ 454  02C5              ; 216     printChatC();
+ 455  02C5 CD 09 F8     	call printchatc
+ 456  02C8              ; 217     c = 0x45;
+ 457  02C8 0E 45        	ld c, 69
+ 458  02CA              ; 218     printChatC();
+ 459  02CA C3 09 F8     	jp printchatc
+ 460  02CD              ; 219 }
+ 461  02CD              ; 220
+ 462  02CD              ; 221 void drowRect() {
+ 463  02CD              drowrect:
+ 464  02CD              ; 222     setMyFont();
+ 465  02CD CD 49 03     	call setmyfont
+ 466  02D0              ; 223
+ 467  02D0              ; 224     //h = y
+ 468  02D0              ; 225     a = drowRectY;
+ 469  02D0 3A 5E 03     	ld a, (drowrecty)
+ 470  02D3              ; 226     h = a;
+ 471  02D3 67           	ld h, a
+ 472  02D4              ; 227
+ 473  02D4              ; 228     do {
+ 474  02D4              l_17:
+ 475  02D4              ; 229         //l = x
+ 476  02D4              ; 230         a = drowRectX;
+ 477  02D4 3A 5D 03     	ld a, (drowrectx)
+ 478  02D7              ; 231         l = a;
+ 479  02D7 6F           	ld l, a
+ 480  02D8              ; 232
+ 481  02D8              ; 233         push_pop(hl) {
+ 482  02D8 E5           	push hl
+ 483  02D9              ; 234             setPosCursor();
+ 484  02D9 CD 3C F8     	call setposcursor
+ 485  02DC E1           	pop hl
+ 486  02DD              ; 235         }
+ 487  02DD              ; 236
+ 488  02DD              ; 237         do {
+ 489  02DD              l_20:
+ 490  02DD              ; 238             if ((a = drowRectY) == h) {
+ 491  02DD 3A 5E 03     	ld a, (drowrecty)
+ 492  02E0 BC           	cp h
+ 493  02E1 C2 FC 02     	jp nz, l_23
+ 494  02E4              ; 239                 c = 0x26;
+ 495  02E4 0E 26        	ld c, 38
+ 496  02E6              ; 240                 if ((a = drowRectX) == l) {
+ 497  02E6 3A 5D 03     	ld a, (drowrectx)
+ 498  02E9 BD           	cp l
+ 499  02EA C2 EF 02     	jp nz, l_25
+ 500  02ED              ; 241                     c = 0x21;
+ 501  02ED 0E 21        	ld c, 33
+ 502  02EF              l_25:
+ 503  02EF              ; 242                 }
+ 504  02EF              ; 243                 if ((a = drowRectEndX)-- == l) {
+ 505  02EF 3A 5F 03     	ld a, (drowrectendx)
+ 506  02F2 3D           	dec a
+ 507  02F3 BD           	cp l
+ 508  02F4 C2 F9 02     	jp nz, l_27
+ 509  02F7              ; 244                     c = 0x23;
+ 510  02F7 0E 23        	ld c, 35
+ 511  02F9              l_27:
+ 512  02F9 C3 31 03     	jp l_24
+ 513  02FC              l_23:
+ 514  02FC              ; 245                 }
+ 515  02FC              ; 246             } else if ((a = drowRectEndY)-- == h) {
+ 516  02FC 3A 60 03     	ld a, (drowrectendy)
+ 517  02FF 3D           	dec a
+ 518  0300 BC           	cp h
+ 519  0301 C2 1C 03     	jp nz, l_29
+ 520  0304              ; 247                 c = 0x26;
+ 521  0304 0E 26        	ld c, 38
+ 522  0306              ; 248                 if ((a = drowRectX) == l) {
+ 523  0306 3A 5D 03     	ld a, (drowrectx)
+ 524  0309 BD           	cp l
+ 525  030A C2 0F 03     	jp nz, l_31
+ 526  030D              ; 249                     c = 0x22;
+ 527  030D 0E 22        	ld c, 34
+ 528  030F              l_31:
+ 529  030F              ; 250                 }
+ 530  030F              ; 251                 if ((a = drowRectEndX)-- == l) {
+ 531  030F 3A 5F 03     	ld a, (drowrectendx)
+ 532  0312 3D           	dec a
+ 533  0313 BD           	cp l
+ 534  0314 C2 19 03     	jp nz, l_33
+ 535  0317              ; 252                     c = 0x24;
+ 536  0317 0E 24        	ld c, 36
+ 537  0319              l_33:
+ 538  0319 C3 31 03     	jp l_30
+ 539  031C              l_29:
+ 540  031C              ; 253                 }
+ 541  031C              ; 254             } else {
+ 542  031C              ; 255                 c = 0x20;
+ 543  031C 0E 20        	ld c, 32
+ 544  031E              ; 256                 if ((a = drowRectX) == l) {
+ 545  031E 3A 5D 03     	ld a, (drowrectx)
+ 546  0321 BD           	cp l
+ 547  0322 C2 27 03     	jp nz, l_35
+ 548  0325              ; 257                     c = 0x25;
+ 549  0325 0E 25        	ld c, 37
+ 550  0327              l_35:
+ 551  0327              ; 258                 }
+ 552  0327              ; 259                 if ((a = drowRectEndX)-- == l) {
+ 553  0327 3A 5F 03     	ld a, (drowrectendx)
+ 554  032A 3D           	dec a
+ 555  032B BD           	cp l
+ 556  032C C2 31 03     	jp nz, l_37
+ 557  032F              ; 260                     c = 0x25;
+ 558  032F 0E 25        	ld c, 37
+ 559  0331              l_37:
+ 560  0331              l_30:
+ 561  0331              l_24:
+ 562  0331              ; 261                 }
+ 563  0331              ; 262             }
+ 564  0331              ; 263
+ 565  0331              ; 264             push_pop(hl) {
+ 566  0331 E5           	push hl
+ 567  0332              ; 265                 printChatC();
+ 568  0332 CD 09 F8     	call printchatc
+ 569  0335 E1           	pop hl
+ 570  0336              ; 266             }
+ 571  0336              ; 267
+ 572  0336              ; 268             a = drowRectEndX;
+ 573  0336 3A 5F 03     	ld a, (drowrectendx)
+ 574  0339              ; 269             l++;
+ 575  0339 2C           	inc l
+ 576  033A              ; 270             a -= l;
+ 577  033A 95           	sub l
+ 578  033B              l_21:
+ 579  033B C2 DD 02     	jp nz, l_20
+ 580  033E              ; 271         } while (flag_nz);
+ 581  033E              ; 272
+ 582  033E              ; 273         a = drowRectEndY;
+ 583  033E 3A 60 03     	ld a, (drowrectendy)
+ 584  0341              ; 274         h++;
+ 585  0341 24           	inc h
+ 586  0342              ; 275         a -= h;
+ 587  0342 94           	sub h
+ 588  0343              l_18:
+ 589  0343 C2 D4 02     	jp nz, l_17
+ 590  0346              ; 276     } while (flag_nz);
+ 591  0346              ; 277
+ 592  0346              ; 278     setSystemFont();
+ 593  0346 C3 56 03     	jp setsystemfont
+ 594  0349              ; 279 }
+ 595  0349              ; 280
+ 596  0349              ; 281 void setMyFont() {
+ 597  0349              setmyfont:
+ 598  0349              ; 282     hl = fontAddress;
+ 599  0349 2A D1 F3     	ld hl, (fontaddress)
+ 600  034C              ; 283     systemFontAddress = hl;
+ 601  034C 22 61 03     	ld (systemfontaddress), hl
+ 602  034F              ; 284     hl = &myFont;
+ 603  034F 21 9C 07     	ld hl, myfont
+ 604  0352              ; 285     fontAddress = hl;
+ 605  0352 22 D1 F3     	ld (fontaddress), hl
+ 606  0355 C9           	ret
+ 607  0356              ; 286 }
+ 608  0356              ; 287
+ 609  0356              ; 288 void setSystemFont() {
+ 610  0356              setsystemfont:
+ 611  0356              ; 289     hl = systemFontAddress;
+ 612  0356 2A 61 03     	ld hl, (systemfontaddress)
+ 613  0359              ; 290     fontAddress = hl;
+ 614  0359 22 D1 F3     	ld (fontaddress), hl
+ 615  035C C9           	ret
+ 616  035D              ; 291 }
+ 617  035D              ; 292
+ 618  035D              ; 293 uint8_t drowRectX = 0x00;
+ 619  035D              drowrectx:
+ 620  035D 00           	db 0
+ 621  035E              ; 294 uint8_t drowRectY = 0x00;
+ 622  035E              drowrecty:
+ 623  035E 00           	db 0
+ 624  035F              ; 295 uint8_t drowRectEndX = 0x00;
+ 625  035F              drowrectendx:
+ 626  035F 00           	db 0
+ 627  0360              ; 296 uint8_t drowRectEndY = 0x00;
+ 628  0360              drowrectendy:
+ 629  0360 00           	db 0
+ 630  0361              ; 298 uint16_t systemFontAddress = 0x0000;
+ 631  0361              systemfontaddress:
+ 632  0361 00 00        	dw 0
+ 633  0363              ; 300 void updateDiskList() {
+ 634  0363              updatedisklist:
+ 635  0363              ; 301     a = diskViewDiskNum;
+ 636  0363 3A C4 08     	ld a, (diskviewdisknum)
+ 637  0366              ; 302     ordos_wnd();
+ 638  0366 CD D6 BF     	call ordos_wnd
+ 639  0369              ; 303     hl = startListBufer;
+ 640  0369 21 00 00     	ld hl, 0
+ 641  036C              ; 304     ordos_dirm();
+ 642  036C CD E8 BF     	call ordos_dirm
+ 643  036F              ; 305     diskViewListCount = a;
+ 644  036F 32 C5 08     	ld (diskviewlistcount), a
+ 645  0372 C9           	ret
+ 646  0373              ; 306 }
+ 647  0373              ; 307
+ 648  0373              ; 308 void showDiskList() {
+ 649  0373              showdisklist:
+ 650  0373              ; 309     b = 0;
+ 651  0373 06 00        	ld b, 0
+ 652  0375              ; 310     showDiskDriveName();
+ 653  0375 CD 99 03     	call showdiskdrivename
+ 654  0378              ; 311     showDiskDir();
+ 655  0378 CD A8 03     	call showdiskdir
+ 656  037B              ; 312     hl = diskViewListNamePos;
+ 657  037B 2A C7 08     	ld hl, (diskviewlistnamepos)
+ 658  037E              ; 313
+ 659  037E              ; 314     if ((a = diskViewListCount) == 0) {
+ 660  037E 3A C5 08     	ld a, (diskviewlistcount)
+ 661  0381 B7           	or a
+ 662  0382 C2 86 03     	jp nz, l_39
+ 663  0385              ; 315         return;
+ 664  0385 C9           	ret
+ 665  0386              l_39:
+ 666  0386              ; 316     }
+ 667  0386              ; 317
+ 668  0386              ; 318     do {
+ 669  0386              l_41:
+ 670  0386              ; 319         setPosCursor();
+ 671  0386 CD 3C F8     	call setposcursor
+ 672  0389              ; 320         a = b;
+ 673  0389 78           	ld a, b
+ 674  038A              ; 321         push_pop(hl) {
+ 675  038A E5           	push hl
+ 676  038B              ; 322             showDiskApp();
+ 677  038B CD D1 03     	call showdiskapp
+ 678  038E E1           	pop hl
+ 679  038F              ; 323         };
+ 680  038F              ; 324
+ 681  038F              ; 325         h++;
+ 682  038F 24           	inc h
+ 683  0390              ; 326         b++;
+ 684  0390 04           	inc b
+ 685  0391              ; 327         a = diskViewListCount;
+ 686  0391 3A C5 08     	ld a, (diskviewlistcount)
+ 687  0394              ; 328         a -= b;
+ 688  0394 90           	sub b
+ 689  0395              l_42:
+ 690  0395 C2 86 03     	jp nz, l_41
+ 691  0398 C9           	ret
+ 692  0399              ; 329     } while (flag_nz);
+ 693  0399              ; 330 }
+ 694  0399              ; 331
+ 695  0399              ; 332 void showDiskDriveName() {
+ 696  0399              showdiskdrivename:
+ 697  0399              ; 333     push_pop(hl) {
+ 698  0399 E5           	push hl
+ 699  039A              ; 334         hl = diskViewDriveNamePos;
+ 700  039A 2A D6 08     	ld hl, (diskviewdrivenamepos)
+ 701  039D              ; 335         setPosCursor();
+ 702  039D CD 3C F8     	call setposcursor
+ 703  03A0              ; 336         a = diskViewDiskNum;
+ 704  03A0 3A C4 08     	ld a, (diskviewdisknum)
+ 705  03A3              ; 337         printChatA();
+ 706  03A3 CD 0F F8     	call printchata
+ 707  03A6 E1           	pop hl
+ 708  03A7 C9           	ret
+ 709  03A8              ; 338     }
+ 710  03A8              ; 339 }
+ 711  03A8              ; 340
+ 712  03A8              ; 341 void showDiskDir() {
+ 713  03A8              showdiskdir:
+ 714  03A8              ; 342     push_pop(hl) {
+ 715  03A8 E5           	push hl
+ 716  03A9              ; 343         hl = diskViewListDirPos;
+ 717  03A9 2A C9 08     	ld hl, (diskviewlistdirpos)
+ 718  03AC              ; 344         setPosCursor();
+ 719  03AC CD 3C F8     	call setposcursor
+ 720  03AF              ; 345         hl = diskViewListDirLabel;
+ 721  03AF 21 CB 08     	ld hl, diskviewlistdirlabel
+ 722  03B2              ; 346         push_pop(bc) {
+ 723  03B2 C5           	push bc
+ 724  03B3              ; 347             if ((a = diskViewCurrPos) == 0) {
+ 725  03B3 3A C6 08     	ld a, (diskviewcurrpos)
+ 726  03B6 B7           	or a
+ 727  03B7 C2 C6 03     	jp nz, l_44
+ 728  03BA              ; 348                 if ((a = rootViewCurrentView) == rootViewCurrentDiskView) {
+ 729  03BA 3A E7 08     	ld a, (rootviewcurrentview)
+ 730  03BD B7           	or a
+ 731  03BE C2 C6 03     	jp nz, l_46
+ 732  03C1              ; 349                     a = 0xFF;
+ 733  03C1 3E FF        	ld a, 255
+ 734  03C3              ; 350                     inverceAddress = a;
+ 735  03C3 32 D3 F3     	ld (inverceaddress), a
+ 736  03C6              l_46:
+ 737  03C6              l_44:
+ 738  03C6              ; 351                 }
+ 739  03C6              ; 352             }
+ 740  03C6              ; 353             printHLStr();
+ 741  03C6 CD 18 F8     	call printhlstr
+ 742  03C9              ; 354             a = 0;
+ 743  03C9 3E 00        	ld a, 0
+ 744  03CB              ; 355             inverceAddress = a;
+ 745  03CB 32 D3 F3     	ld (inverceaddress), a
+ 746  03CE C1           	pop bc
+ 747  03CF E1           	pop hl
+ 748  03D0 C9           	ret
+ 749  03D1              ; 356         }
+ 750  03D1              ; 357     }
+ 751  03D1              ; 358 }
+ 752  03D1              ; 359
+ 753  03D1              ; 360 ///A - count app
+ 754  03D1              ; 361 void showDiskApp() {
+ 755  03D1              showdiskapp:
+ 756  03D1              ; 362     push_pop(bc) {
+ 757  03D1 C5           	push bc
+ 758  03D2              ; 363
+ 759  03D2              ; 364         c = a;
+ 760  03D2 4F           	ld c, a
+ 761  03D3              ; 365         carry_rotate_left(a, 4);
+ 762  03D3 17           	rla
+ 763  03D4 17           	rla
+ 764  03D5 17           	rla
+ 765  03D6 17           	rla
+ 766  03D7              ; 366         hl = startListBufer;
+ 767  03D7 21 00 00     	ld hl, 0
+ 768  03DA              ; 367         a += l;
+ 769  03DA 85           	add l
+ 770  03DB              ; 368         l = a;
+ 771  03DB 6F           	ld l, a
+ 772  03DC              ; 369         if (flag_c) {
+ 773  03DC D2 E0 03     	jp nc, l_48
+ 774  03DF              ; 370             h++;
+ 775  03DF 24           	inc h
+ 776  03E0              l_48:
+ 777  03E0              ; 371         }
+ 778  03E0              ; 372
+ 779  03E0              ; 373         if ((a = diskViewCurrPos)-- == c) {
+ 780  03E0 3A C6 08     	ld a, (diskviewcurrpos)
+ 781  03E3 3D           	dec a
+ 782  03E4 B9           	cp c
+ 783  03E5 C2 F4 03     	jp nz, l_50
+ 784  03E8              ; 374             if ((a = rootViewCurrentView) == rootViewCurrentDiskView) {
+ 785  03E8 3A E7 08     	ld a, (rootviewcurrentview)
+ 786  03EB B7           	or a
+ 787  03EC C2 F4 03     	jp nz, l_52
+ 788  03EF              ; 375                 a = 0xFF;
+ 789  03EF 3E FF        	ld a, 255
+ 790  03F1              ; 376                 inverceAddress = a;
+ 791  03F1 32 D3 F3     	ld (inverceaddress), a
+ 792  03F4              l_52:
+ 793  03F4              l_50:
+ 794  03F4              ; 377             }
+ 795  03F4              ; 378         }
+ 796  03F4              ; 379
+ 797  03F4              ; 380         a = ' ';
+ 798  03F4 3E 20        	ld a, 32
+ 799  03F6              ; 381         printChatA();
+ 800  03F6 CD 0F F8     	call printchata
+ 801  03F9              ; 382         b = 0;
+ 802  03F9 06 00        	ld b, 0
+ 803  03FB              ; 383
+ 804  03FB              ; 384         do {
+ 805  03FB              l_54:
+ 806  03FB              ; 385             a = *hl;
+ 807  03FB 7E           	ld a, (hl)
+ 808  03FC              ; 386             printChatA();
+ 809  03FC CD 0F F8     	call printchata
+ 810  03FF              ; 387             hl++;
+ 811  03FF 23           	inc hl
+ 812  0400              ; 388             b++;
+ 813  0400 04           	inc b
+ 814  0401              ; 389             a = 8;
+ 815  0401 3E 08        	ld a, 8
+ 816  0403              ; 390             a -= b;
+ 817  0403 90           	sub b
+ 818  0404              l_55:
+ 819  0404 C2 FB 03     	jp nz, l_54
+ 820  0407              ; 391         } while (flag_nz);
+ 821  0407              ; 392         a = ' ';
+ 822  0407 3E 20        	ld a, 32
+ 823  0409              ; 393         printChatA();
+ 824  0409 CD 0F F8     	call printchata
+ 825  040C C1           	pop bc
+ 826  040D              ; 394     };
+ 827  040D              ; 395     a = 0;
+ 828  040D 3E 00        	ld a, 0
+ 829  040F              ; 396     inverceAddress = a;
+ 830  040F 32 D3 F3     	ld (inverceaddress), a
+ 831  0412 C9           	ret
+ 832  0413              ; 397 }
+ 833  0413              ; 398
+ 834  0413              ; 399 void diskViewKeyA() {
+ 835  0413              diskviewkeya:
+ 836  0413              ; 400     push_pop(bc) {
+ 837  0413 C5           	push bc
+ 838  0414              ; 401         b = a;
+ 839  0414 47           	ld b, a
+ 840  0415              ; 402
+ 841  0415              ; 403         if (a == 0x1A) { //down
+ 842  0415 FE 1A        	cp 26
+ 843  0417 C2 2C 04     	jp nz, l_57
+ 844  041A              ; 404             a = diskViewListCount;
+ 845  041A 3A C5 08     	ld a, (diskviewlistcount)
+ 846  041D              ; 405             c = a;
+ 847  041D 4F           	ld c, a
+ 848  041E              ; 406             if ( (a = diskViewCurrPos) < c  ) {
+ 849  041E 3A C6 08     	ld a, (diskviewcurrpos)
+ 850  0421 B9           	cp c
+ 851  0422 D2 29 04     	jp nc, l_59
+ 852  0425              ; 407                 a++;
+ 853  0425 3C           	inc a
+ 854  0426              ; 408                 diskViewCurrPos = a;
+ 855  0426 32 C6 08     	ld (diskviewcurrpos), a
+ 856  0429              l_59:
+ 857  0429 C3 75 04     	jp l_58
+ 858  042C              l_57:
+ 859  042C              ; 409             }
+ 860  042C              ; 410         } else if (a == 0x19) { //up
+ 861  042C FE 19        	cp 25
+ 862  042E C2 3F 04     	jp nz, l_61
+ 863  0431              ; 411             if ( (a = diskViewCurrPos) > 0 ) {
+ 864  0431 3A C6 08     	ld a, (diskviewcurrpos)
+ 865  0434 B7           	or a
+ 866  0435 CA 3C 04     	jp z, l_63
+ 867  0438              ; 412                 a--;
+ 868  0438 3D           	dec a
+ 869  0439              ; 413                 diskViewCurrPos = a;
+ 870  0439 32 C6 08     	ld (diskviewcurrpos), a
+ 871  043C              l_63:
+ 872  043C C3 75 04     	jp l_62
+ 873  043F              l_61:
+ 874  043F              ; 414             }
+ 875  043F              ; 415         } else if (a == 0x0D) { //Enter
+ 876  043F FE 0D        	cp 13
+ 877  0441 C2 75 04     	jp nz, l_65
+ 878  0444              ; 416             if ((a = diskViewCurrPos) == 0) { // Change drive
+ 879  0444 3A C6 08     	ld a, (diskviewcurrpos)
+ 880  0447 B7           	or a
+ 881  0448 C2 75 04     	jp nz, l_67
+ 882  044B              ; 417                 a = diskViewDiskNum;
+ 883  044B 3A C4 08     	ld a, (diskviewdisknum)
+ 884  044E              ; 418                 if (a == 'B') {
+ 885  044E FE 42        	cp 66
+ 886  0450 C2 58 04     	jp nz, l_69
+ 887  0453              ; 419                     a = 'C';
+ 888  0453 3E 43        	ld a, 67
+ 889  0455 C3 69 04     	jp l_70
+ 890  0458              l_69:
+ 891  0458              ; 420                 } else if (a == 'C') {
+ 892  0458 FE 43        	cp 67
+ 893  045A C2 62 04     	jp nz, l_71
+ 894  045D              ; 421                     a = 'D';
+ 895  045D 3E 44        	ld a, 68
+ 896  045F C3 69 04     	jp l_72
+ 897  0462              l_71:
+ 898  0462              ; 422                 } else if (a == 'D') {
+ 899  0462 FE 44        	cp 68
+ 900  0464 C2 69 04     	jp nz, l_73
+ 901  0467              ; 423                     a = 'B';
+ 902  0467 3E 42        	ld a, 66
+ 903  0469              l_73:
+ 904  0469              l_72:
+ 905  0469              l_70:
+ 906  0469              ; 424                 }
+ 907  0469              ; 425                 diskViewDiskNum = a;
+ 908  0469 32 C4 08     	ld (diskviewdisknum), a
+ 909  046C              ; 426                 diskView();
+ 910  046C CD A6 01     	call diskview
+ 911  046F              ; 427                 updateDiskList();
+ 912  046F CD 63 03     	call updatedisklist
+ 913  0472 C3 75 04     	jp l_68
+ 914  0475              l_67:
+ 915  0475              ; 428             } else { // Upload file to FTP
+ 916  0475              l_68:
+ 917  0475              l_65:
+ 918  0475              l_62:
+ 919  0475              l_58:
+ 920  0475 C1           	pop bc
+ 921  0476 C9           	ret
+ 922  0477              ; 429
+ 923  0477              ; 430             }
+ 924  0477              ; 431         }
+ 925  0477              ; 432     }
+ 926  0477              ; 433 }
+ 927  0477              ; 434
+ 928  0477              ; 435 void showHelpStr() {
+ 929  0477              showhelpstr:
+ 930  0477              ; 436     push_pop(hl) {
+ 931  0477 E5           	push hl
+ 932  0478              ; 437         hl = rootViewHelpStrPos;
+ 933  0478 2A E8 08     	ld hl, (rootviewhelpstrpos)
+ 934  047B              ; 438         setPosCursor();
+ 935  047B CD 3C F8     	call setposcursor
+ 936  047E              ; 439         hl = rootViewHelpStr;
+ 937  047E 21 EA 08     	ld hl, rootviewhelpstr
+ 938  0481              ; 440         printHLStr();
+ 939  0481 CD 18 F8     	call printhlstr
+ 940  0484 E1           	pop hl
+ 941  0485 C9           	ret
+ 942  0486              ; 441     }
+ 943  0486              ; 442 }
+ 944  0486              ; 443
+ 945  0486              ; 444 void showFtpSettingsEditView() {
+ 946  0486              showftpsettingseditview:
+ 947  0486              ; 445     drowRectX = (a = ftpSettingsEditViewX);
+ 948  0486 3A 29 09     	ld a, (ftpsettingseditviewx)
+ 949  0489 32 5D 03     	ld (drowrectx), a
+ 950  048C              ; 446     drowRectY = (a = ftpSettingsEditViewY);
+ 951  048C 3A 2A 09     	ld a, (ftpsettingseditviewy)
+ 952  048F 32 5E 03     	ld (drowrecty), a
+ 953  0492              ; 447     drowRectEndX = (a = ftpSettingsEditViewEX);
+ 954  0492 3A 2B 09     	ld a, (ftpsettingseditviewex)
+ 955  0495 32 5F 03     	ld (drowrectendx), a
+ 956  0498              ; 448     drowRectEndY = (a = ftpSettingsEditViewEY);
+ 957  0498 3A 2C 09     	ld a, (ftpsettingseditviewey)
+ 958  049B 32 60 03     	ld (drowrectendy), a
+ 959  049E              ; 449     drowRect();
+ 960  049E CD CD 02     	call drowrect
+ 961  04A1              ; 450
+ 962  04A1              ; 451     hl = ftpSettingsEditViewLabelPos;
+ 963  04A1 2A 2D 09     	ld hl, (ftpsettingseditviewlabelpos)
+ 964  04A4              ; 452     setPosCursor();
+ 965  04A4 CD 3C F8     	call setposcursor
+ 966  04A7              ; 453     hl = ftpSettingsEditViewLabel;
+ 967  04A7 21 2F 09     	ld hl, ftpsettingseditviewlabel
+ 968  04AA              ; 454     printHLStr();
+ 969  04AA CD 18 F8     	call printhlstr
+ 970  04AD              ; 455
+ 971  04AD              ; 456     hl = ftpSettingsEditViewIpLabelPos;
+ 972  04AD 2A 3E 09     	ld hl, (ftpsettingseditviewiplabelpos)
+ 973  04B0              ; 457     setPosCursor();
+ 974  04B0 CD 3C F8     	call setposcursor
+ 975  04B3              ; 458     hl = ftpSettingsIpLabel;
+ 976  04B3 21 5C 08     	ld hl, ftpsettingsiplabel
+ 977  04B6              ; 459     printHLStr();
+ 978  04B6 CD 18 F8     	call printhlstr
+ 979  04B9              ; 460
+ 980  04B9              ; 461     hl = ftpSettingsEditViewPortLabelPos;
+ 981  04B9 2A 40 09     	ld hl, (ftpsettingseditviewportlabelpos)
+ 982  04BC              ; 462     setPosCursor();
+ 983  04BC CD 3C F8     	call setposcursor
+ 984  04BF              ; 463     hl = ftpSettingsPortLabel;
+ 985  04BF 21 62 08     	ld hl, ftpsettingsportlabel
+ 986  04C2              ; 464     printHLStr();
+ 987  04C2 CD 18 F8     	call printhlstr
+ 988  04C5              ; 465
+ 989  04C5              ; 466     hl = ftpSettingsEditViewUserLabelPos;
+ 990  04C5 2A 42 09     	ld hl, (ftpsettingseditviewuserlabelpos)
+ 991  04C8              ; 467     setPosCursor();
+ 992  04C8 CD 3C F8     	call setposcursor
+ 993  04CB              ; 468     hl = ftpSettingsUserLabel;
+ 994  04CB 21 6A 08     	ld hl, ftpsettingsuserlabel
+ 995  04CE              ; 469     printHLStr();
+ 996  04CE CD 18 F8     	call printhlstr
+ 997  04D1              ; 470
+ 998  04D1              ; 471     hl = ftpSettingsEditViewPasswordLabelPos;
+ 999  04D1 2A 44 09     	ld hl, (ftpsettingseditviewpasswordlabel)
+1000  04D4              ; 472     setPosCursor();
+1001  04D4 CD 3C F8     	call setposcursor
+1002  04D7              ; 473     hl = ftpSettingsEditViewPasswordLabel;
+1003  04D7 21 46 09     	ld hl, ftpsettingseditviewpasswordlabel_0
+1004  04DA              ; 474     printHLStr();
+1005  04DA CD 18 F8     	call printhlstr
+1006  04DD              ; 475
+1007  04DD              ; 476     hl = ftpSettingsEditViewOkLabelPos;
+1008  04DD 2A 4C 09     	ld hl, (ftpsettingseditviewoklabelpos)
+1009  04E0              ; 477     setPosCursor();
+1010  04E0 CD 3C F8     	call setposcursor
+1011  04E3              ; 478     hl = ftpSettingsEditViewOkLabel;
+1012  04E3 21 4E 09     	ld hl, ftpsettingseditviewoklabel
+1013  04E6              ; 479     printHLStr();
+1014  04E6 C3 18 F8     	jp printhlstr
+1015  04E9              ; 480 }
+1016  04E9              ; 481
+1017  04E9              ; 482 void needOpenFTPSettingsEditView() {
+1018  04E9              needopenftpsettingseditview:
+1019  04E9              ; 483     push_pop(hl) {
+1020  04E9 E5           	push hl
+1021  04EA              ; 484         if ((a = rootViewCurrentView) != rootViewCurrentFTPSettingsEditView) { //Если уже открыты настройки - не открываем
+1022  04EA 3A E7 08     	ld a, (rootviewcurrentview)
+1023  04ED FE 02        	cp 2
+1024  04EF CA 0D 05     	jp z, l_75
+1025  04F2              ; 485             if ((a = rootViewCurrentView) != rootViewCurrentFTPSettingsEditView) { //Если открыта настройка WiFi тоже не открываем
+1026  04F2 3A E7 08     	ld a, (rootviewcurrentview)
+1027  04F5 FE 02        	cp 2
+1028  04F7 CA 0D 05     	jp z, l_77
+1029  04FA              ; 486
+1030  04FA              ; 487                 a = rootViewCurrentFTPSettingsEditView;
+1031  04FA 3E 02        	ld a, 2
+1032  04FC              ; 488                 rootViewCurrentView = a;
+1033  04FC 32 E7 08     	ld (rootviewcurrentview), a
+1034  04FF              ; 489                 a = 4;
+1035  04FF 3E 04        	ld a, 4
+1036  0501              ; 490                 ftpSettingsEditViewCurrentPos = a;
+1037  0501 32 6D 09     	ld (ftpsettingseditviewcurrentpos), a
+1038  0504              ; 491
+1039  0504              ; 492                 showDiskList(); //Сбросить выделение строки
+1040  0504 CD 73 03     	call showdisklist
+1041  0507              ; 493                 showFtpSettingsEditView();
+1042  0507 CD 86 04     	call showftpsettingseditview
+1043  050A              ; 494                 ftpSettingsEditViewDataUpdate();
+1044  050A CD 11 07     	call ftpsettingseditviewdataupdate
+1045  050D              l_77:
+1046  050D              l_75:
+1047  050D E1           	pop hl
+1048  050E C9           	ret
+1049  050F              ; 495             }
+1050  050F              ; 496         }
+1051  050F              ; 497     }
+1052  050F              ; 498 }
+1053  050F              ; 499
+1054  050F              ; 500 void ftpSettingsEditViewKeyA() {
+1055  050F              ftpsettingseditviewkeya:
+1056  050F              ; 501     push_pop(hl) {
+1057  050F E5           	push hl
+1058  0510              ; 502         l = a;
+1059  0510 6F           	ld l, a
+1060  0511              ; 503         if ((a = rootViewCurrentView) == rootViewCurrentFTPSettingsEditView) {
+1061  0511 3A E7 08     	ld a, (rootviewcurrentview)
+1062  0514 FE 02        	cp 2
+1063  0516 C2 79 05     	jp nz, l_79
+1064  0519              ; 504             a = l;
+1065  0519 7D           	ld a, l
+1066  051A              ; 505             if (a == 0x1B) { //ESC выход из настройки
+1067  051A FE 1B        	cp 27
+1068  051C C2 2D 05     	jp nz, l_81
+1069  051F              ; 506                 a = rootViewCurrentDiskView; // переходим на список файлов на диске
+1070  051F 3E 00        	ld a, 0
+1071  0521              ; 507                 rootViewCurrentView = a;
+1072  0521 32 E7 08     	ld (rootviewcurrentview), a
+1073  0524              ; 508
+1074  0524              ; 509                 updateRootUI();
+1075  0524 CD 6D 01     	call updaterootui
+1076  0527              ; 510                 updateRootDataUI();
+1077  0527 CD 6A 01     	call updaterootdataui
+1078  052A C3 79 05     	jp l_82
+1079  052D              l_81:
+1080  052D              ; 511             } else {
+1081  052D              ; 512                 if (a == 0x1A) { //down
+1082  052D FE 1A        	cp 26
+1083  052F C2 43 05     	jp nz, l_83
+1084  0532              ; 513                     a = ftpSettingsEditViewCurrentPos;
+1085  0532 3A 6D 09     	ld a, (ftpsettingseditviewcurrentpos)
+1086  0535              ; 514                     a++;
+1087  0535 3C           	inc a
+1088  0536              ; 515                     if (a == 5) {
+1089  0536 FE 05        	cp 5
+1090  0538 C2 3D 05     	jp nz, l_85
+1091  053B              ; 516                         a = 0;
+1092  053B 3E 00        	ld a, 0
+1093  053D              l_85:
+1094  053D              ; 517                     }
+1095  053D              ; 518                     ftpSettingsEditViewCurrentPos = a;
+1096  053D 32 6D 09     	ld (ftpsettingseditviewcurrentpos), a
+1097  0540 C3 79 05     	jp l_84
+1098  0543              l_83:
+1099  0543              ; 519                 } else if (a == 0x19) { //up
+1100  0543 FE 19        	cp 25
+1101  0545 C2 5B 05     	jp nz, l_87
+1102  0548              ; 520                     a = ftpSettingsEditViewCurrentPos;
+1103  0548 3A 6D 09     	ld a, (ftpsettingseditviewcurrentpos)
+1104  054B              ; 521                     if (a == 0) {
+1105  054B B7           	or a
+1106  054C C2 54 05     	jp nz, l_89
+1107  054F              ; 522                         a = 4;
+1108  054F 3E 04        	ld a, 4
+1109  0551 C3 55 05     	jp l_90
+1110  0554              l_89:
+1111  0554              ; 523                     } else {
+1112  0554              ; 524                         a--;
+1113  0554 3D           	dec a
+1114  0555              l_90:
+1115  0555              ; 525                     }
+1116  0555              ; 526                     ftpSettingsEditViewCurrentPos = a;
+1117  0555 32 6D 09     	ld (ftpsettingseditviewcurrentpos), a
+1118  0558 C3 79 05     	jp l_88
+1119  055B              l_87:
+1120  055B              ; 527                 } else if (a == 0x0D) { //Enter
+1121  055B FE 0D        	cp 13
+1122  055D C2 79 05     	jp nz, l_91
+1123  0560              ; 528                     if ((a = ftpSettingsEditViewCurrentPos) == 4) { // Нажатие на кнопку ОК
+1124  0560 3A 6D 09     	ld a, (ftpsettingseditviewcurrentpos)
+1125  0563 FE 04        	cp 4
+1126  0565 C2 76 05     	jp nz, l_93
+1127  0568              ; 529                         a = rootViewCurrentDiskView; // переходим на список файлов на диске
+1128  0568 3E 00        	ld a, 0
+1129  056A              ; 530                         rootViewCurrentView = a;
+1130  056A 32 E7 08     	ld (rootviewcurrentview), a
+1131  056D              ; 531
+1132  056D              ; 532                         updateRootUI();
+1133  056D CD 6D 01     	call updaterootui
+1134  0570              ; 533                         updateRootDataUI();
+1135  0570 CD 6A 01     	call updaterootdataui
+1136  0573 C3 79 05     	jp l_94
+1137  0576              l_93:
+1138  0576              ; 534                     } else {
+1139  0576              ; 535                         ftpSettingsEditViewSelectEditField();
+1140  0576 CD 7B 05     	call ftpsettingseditviewselecteditfie
+1141  0579              l_94:
+1142  0579              l_91:
+1143  0579              l_88:
+1144  0579              l_84:
+1145  0579              l_82:
+1146  0579              l_79:
+1147  0579 E1           	pop hl
+1148  057A C9           	ret
+1149  057B              ; 536                     }
+1150  057B              ; 537                 }
+1151  057B              ; 538             }
+1152  057B              ; 539         }
+1153  057B              ; 540     }
+1154  057B              ; 541 }
+1155  057B              ; 542
+1156  057B              ; 543 void ftpSettingsEditViewSelectEditField() {
+1157  057B              ftpsettingseditviewselecteditfie:
+1158  057B              ; 544     a = ftpSettingsEditViewCurrentPos;
+1159  057B 3A 6D 09     	ld a, (ftpsettingseditviewcurrentpos)
+1160  057E              ; 545     if (a == 0) {
+1161  057E B7           	or a
+1162  057F C2 96 05     	jp nz, l_95
+1163  0582              ; 546         hl = ftpSettingsEditViewIpValPos;
+1164  0582 2A 55 09     	ld hl, (ftpsettingseditviewipvalpos)
+1165  0585              ; 547         ftpSettingsEditViewEditValuePos = hl;
+1166  0585 22 6E 09     	ld (ftpsettingseditvieweditvaluepos), hl
+1167  0588              ; 548         setPosCursor();
+1168  0588 CD 3C F8     	call setposcursor
+1169  058B              ; 549
+1170  058B              ; 550         push_pop(hl) {
+1171  058B E5           	push hl
+1172  058C              ; 551             hl = ftpSettingsIpValue;
+1173  058C 21 7C 08     	ld hl, ftpsettingsipvalue
+1174  058F              ; 552             ftpSettingsEditView_CopyStrFromHL();
+1175  058F CD 26 06     	call ftpsettingseditview_copystrfromh
+1176  0592 E1           	pop hl
+1177  0593 C3 DE 05     	jp l_96
+1178  0596              l_95:
+1179  0596              ; 553         }
+1180  0596              ; 554     } else if (a == 1) {
+1181  0596 FE 01        	cp 1
+1182  0598 C2 AF 05     	jp nz, l_97
+1183  059B              ; 555         hl = ftpSettingsEditViewPortValPos;
+1184  059B 2A 57 09     	ld hl, (ftpsettingseditviewportvalpos)
+1185  059E              ; 556         ftpSettingsEditViewEditValuePos = hl;
+1186  059E 22 6E 09     	ld (ftpsettingseditvieweditvaluepos), hl
+1187  05A1              ; 557         setPosCursor();
+1188  05A1 CD 3C F8     	call setposcursor
+1189  05A4              ; 558
+1190  05A4              ; 559         push_pop(hl) {
+1191  05A4 E5           	push hl
+1192  05A5              ; 560             hl = ftpSettingsPortValue;
+1193  05A5 21 8E 08     	ld hl, ftpsettingsportvalue
+1194  05A8              ; 561             ftpSettingsEditView_CopyStrFromHL();
+1195  05A8 CD 26 06     	call ftpsettingseditview_copystrfromh
+1196  05AB E1           	pop hl
+1197  05AC C3 DE 05     	jp l_98
+1198  05AF              l_97:
+1199  05AF              ; 562         }
+1200  05AF              ; 563     } else if (a == 2) {
+1201  05AF FE 02        	cp 2
+1202  05B1 C2 C8 05     	jp nz, l_99
+1203  05B4              ; 564         hl = ftpSettingsEditViewUserValPos;
+1204  05B4 2A 59 09     	ld hl, (ftpsettingseditviewuservalpos)
+1205  05B7              ; 565         ftpSettingsEditViewEditValuePos = hl;
+1206  05B7 22 6E 09     	ld (ftpsettingseditvieweditvaluepos), hl
+1207  05BA              ; 566         setPosCursor();
+1208  05BA CD 3C F8     	call setposcursor
+1209  05BD              ; 567
+1210  05BD              ; 568         push_pop(hl) {
+1211  05BD E5           	push hl
+1212  05BE              ; 569             hl = ftpSettingsUserValue;
+1213  05BE 21 A4 08     	ld hl, ftpsettingsuservalue
+1214  05C1              ; 570             ftpSettingsEditView_CopyStrFromHL();
+1215  05C1 CD 26 06     	call ftpsettingseditview_copystrfromh
+1216  05C4 E1           	pop hl
+1217  05C5 C3 DE 05     	jp l_100
+1218  05C8              l_99:
+1219  05C8              ; 571         }
+1220  05C8              ; 572     } else if (a == 3) {
+1221  05C8 FE 03        	cp 3
+1222  05CA C2 DE 05     	jp nz, l_101
+1223  05CD              ; 573         hl = ftpSettingsEditViewPasswordValPos;
+1224  05CD 2A 5B 09     	ld hl, (ftpsettingseditviewpasswordvalpo)
+1225  05D0              ; 574         ftpSettingsEditViewEditValuePos = hl;
+1226  05D0 22 6E 09     	ld (ftpsettingseditvieweditvaluepos), hl
+1227  05D3              ; 575         setPosCursor();
+1228  05D3 CD 3C F8     	call setposcursor
+1229  05D6              ; 576
+1230  05D6              ; 577         push_pop(hl) {
+1231  05D6 E5           	push hl
+1232  05D7              ; 578             hl = ftpSettingsEditViewPasswordVal;
+1233  05D7 21 5D 09     	ld hl, ftpsettingseditviewpasswordval
+1234  05DA              ; 579             ftpSettingsEditView_CopyStrFromHL();
+1235  05DA CD 26 06     	call ftpsettingseditview_copystrfromh
+1236  05DD E1           	pop hl
+1237  05DE              l_101:
+1238  05DE              l_100:
+1239  05DE              l_98:
+1240  05DE              l_96:
+1241  05DE              ; 580         }
+1242  05DE              ; 581     }
+1243  05DE              ; 582     ftpSettingsEditViewEditField();
+1244  05DE C3 63 06     	jp ftpsettingseditvieweditfield
+1245  05E1              ; 583 }
+1246  05E1              ; 584
+1247  05E1              ; 585 void ftpSettingsEditViewSaveField() {
+1248  05E1              ftpsettingseditviewsavefield:
+1249  05E1              ; 586     a = ftpSettingsEditViewCurrentPos;
+1250  05E1 3A 6D 09     	ld a, (ftpsettingseditviewcurrentpos)
+1251  05E4              ; 587     if (a == 0) {
+1252  05E4 B7           	or a
+1253  05E5 C2 EE 05     	jp nz, l_103
+1254  05E8              ; 588         hl = ftpSettingsIpValue;
+1255  05E8 21 7C 08     	ld hl, ftpsettingsipvalue
+1256  05EB C3 0C 06     	jp l_104
+1257  05EE              l_103:
+1258  05EE              ; 589     } else if (a == 1) {
+1259  05EE FE 01        	cp 1
+1260  05F0 C2 F9 05     	jp nz, l_105
+1261  05F3              ; 590         hl = ftpSettingsPortValue;
+1262  05F3 21 8E 08     	ld hl, ftpsettingsportvalue
+1263  05F6 C3 0C 06     	jp l_106
+1264  05F9              l_105:
+1265  05F9              ; 591     } else if (a == 2) {
+1266  05F9 FE 02        	cp 2
+1267  05FB C2 04 06     	jp nz, l_107
+1268  05FE              ; 592         hl = ftpSettingsUserValue;
+1269  05FE 21 A4 08     	ld hl, ftpsettingsuservalue
+1270  0601 C3 0C 06     	jp l_108
+1271  0604              l_107:
+1272  0604              ; 593     } else if (a == 3) {
+1273  0604 FE 03        	cp 3
+1274  0606 C2 0C 06     	jp nz, l_109
+1275  0609              ; 594         hl = ftpSettingsEditViewPasswordVal;
+1276  0609 21 5D 09     	ld hl, ftpsettingseditviewpasswordval
+1277  060C              l_109:
+1278  060C              l_108:
+1279  060C              l_106:
+1280  060C              l_104:
+1281  060C              ; 595     }
+1282  060C              ; 596     ftpSettingsEditViewSaveEditValueToHL();
+1283  060C              ; 597 }
+1284  060C              ; 598
+1285  060C              ; 599 void ftpSettingsEditViewSaveEditValueToHL() {
+1286  060C              ftpsettingseditviewsaveeditvalue:
+1287  060C              ; 600     push_pop(de) {
+1288  060C D5           	push de
+1289  060D              ; 601         push_pop(bc) {
+1290  060D C5           	push bc
+1291  060E              ; 602             de = ftpSettingsEditViewEditValue;
+1292  060E 11 70 09     	ld de, ftpsettingseditvieweditvalue
+1293  0611              ; 603             a = ftpSettingsEditViewEditPos;
+1294  0611 3A 88 09     	ld a, (ftpsettingseditvieweditpos)
+1295  0614              ; 604             c = a;
+1296  0614 4F           	ld c, a
+1297  0615              ; 605             b = 0;
+1298  0615 06 00        	ld b, 0
+1299  0617              ; 606             do {
+1300  0617              l_111:
+1301  0617              ; 607                 a = *de;
+1302  0617 1A           	ld a, (de)
+1303  0618              ; 608                 *hl = a;
+1304  0618 77           	ld (hl), a
+1305  0619              ; 609                 hl++;
+1306  0619 23           	inc hl
+1307  061A              ; 610                 de++;
+1308  061A 13           	inc de
+1309  061B              ; 611                 b++;
+1310  061B 04           	inc b
+1311  061C              ; 612                 a = b;
+1312  061C 78           	ld a, b
+1313  061D              ; 613                 a -= c;
+1314  061D 91           	sub c
+1315  061E              l_112:
+1316  061E C2 17 06     	jp nz, l_111
+1317  0621              ; 614             } while (flag_nz);
+1318  0621              ; 615             *hl = 0;
+1319  0621 36 00        	ld (hl), 0
+1320  0623 C1           	pop bc
+1321  0624 D1           	pop de
+1322  0625 C9           	ret
+1323  0626              ; 616         }
+1324  0626              ; 617     }
+1325  0626              ; 618 }
+1326  0626              ; 619
+1327  0626              ; 620 void ftpSettingsEditView_CopyStrFromHL() {
+1328  0626              ftpsettingseditview_copystrfromh:
+1329  0626              ; 621     push_pop(de) {
+1330  0626 D5           	push de
+1331  0627              ; 622         push_pop(bc) {
+1332  0627 C5           	push bc
+1333  0628              ; 623             de = ftpSettingsEditViewEditValue;
+1334  0628 11 70 09     	ld de, ftpsettingseditvieweditvalue
+1335  062B              ; 624             b = 0;
+1336  062B 06 00        	ld b, 0
+1337  062D              ; 625             c = 0;
+1338  062D 0E 00        	ld c, 0
+1339  062F              ; 626             do {
+1340  062F              l_114:
+1341  062F              ; 627                 a = *hl;
+1342  062F 7E           	ld a, (hl)
+1343  0630              ; 628                 *de = a;
+1344  0630 12           	ld (de), a
+1345  0631              ; 629                 if ((a = b) == 22) {
+1346  0631 78           	ld a, b
+1347  0632 FE 16        	cp 22
+1348  0634 C2 3D 06     	jp nz, l_117
+1349  0637              ; 630                     a = 0;
+1350  0637 3E 00        	ld a, 0
+1351  0639              ; 631                     *de = a;
+1352  0639 12           	ld (de), a
+1353  063A C3 57 06     	jp l_118
+1354  063D              l_117:
+1355  063D              ; 632                 } else if ((a = c) == 1) {
+1356  063D 79           	ld a, c
+1357  063E FE 01        	cp 1
+1358  0640 C2 49 06     	jp nz, l_119
+1359  0643              ; 633                     a = ' ';
+1360  0643 3E 20        	ld a, 32
+1361  0645              ; 634                     *de = a;
+1362  0645 12           	ld (de), a
+1363  0646 C3 57 06     	jp l_120
+1364  0649              l_119:
+1365  0649              ; 635                 } else if ((a = *de) == 0) {
+1366  0649 1A           	ld a, (de)
+1367  064A B7           	or a
+1368  064B C2 57 06     	jp nz, l_121
+1369  064E              ; 636                     c = 1;
+1370  064E 0E 01        	ld c, 1
+1371  0650              ; 637                     a = ' ';
+1372  0650 3E 20        	ld a, 32
+1373  0652              ; 638                     *de = a;
+1374  0652 12           	ld (de), a
+1375  0653              ; 639                     a = b;
+1376  0653 78           	ld a, b
+1377  0654              ; 640                     ftpSettingsEditViewEditPos = a;
+1378  0654 32 88 09     	ld (ftpsettingseditvieweditpos), a
+1379  0657              l_121:
+1380  0657              l_120:
+1381  0657              l_118:
+1382  0657              ; 641                 }
+1383  0657              ; 642
+1384  0657              ; 643                 hl ++;
+1385  0657 23           	inc hl
+1386  0658              ; 644                 de++;
+1387  0658 13           	inc de
+1388  0659              ; 645                 b++;
+1389  0659 04           	inc b
+1390  065A              ; 646                 a = b;
+1391  065A 78           	ld a, b
+1392  065B              ; 647                 a -= 23;
+1393  065B D6 17        	sub 23
+1394  065D              l_115:
+1395  065D C2 2F 06     	jp nz, l_114
+1396  0660 C1           	pop bc
+1397  0661 D1           	pop de
+1398  0662 C9           	ret
+1399  0663              ; 648             } while (flag_nz);
+1400  0663              ; 649         }
+1401  0663              ; 650     }
+1402  0663              ; 651 }
+1403  0663              ; 652
+1404  0663              ; 653 void ftpSettingsEditViewEditField() {
+1405  0663              ftpsettingseditvieweditfield:
+1406  0663              ; 654     hl = ftpSettingsEditViewEditValuePos;
+1407  0663 2A 6E 09     	ld hl, (ftpsettingseditvieweditvaluepos)
+1408  0666              ; 655     setPosCursor();
+1409  0666 CD 3C F8     	call setposcursor
+1410  0669              ; 656
+1411  0669              ; 657     a = 0xFF;
+1412  0669 3E FF        	ld a, 255
+1413  066B              ; 658     inverceAddress = a;
+1414  066B 32 D3 F3     	ld (inverceaddress), a
+1415  066E              ; 659
+1416  066E              ; 660     hl = ftpSettingsEditViewEditValue;
+1417  066E 21 70 09     	ld hl, ftpsettingseditvieweditvalue
+1418  0671              ; 661     printHLStr();
+1419  0671 CD 18 F8     	call printhlstr
+1420  0674              ; 662
+1421  0674              ; 663     ftpSettingsEditViewSetEditCursor();
+1422  0674 CD 03 07     	call ftpsettingseditviewseteditcursor
+1423  0677              ; 664     push_pop(bc) {
+1424  0677 C5           	push bc
+1425  0678              ; 665         b = 0;
+1426  0678 06 00        	ld b, 0
+1427  067A              ; 666         do {
+1428  067A              l_123:
+1429  067A              ; 667             getKeyboardCharA();
+1430  067A CD 03 F8     	call getkeyboardchara
+1431  067D              ; 668
+1432  067D              ; 669             if (a == 0x1B) { // выход из редактирования без сохранения
+1433  067D FE 1B        	cp 27
+1434  067F C2 87 06     	jp nz, l_126
+1435  0682              ; 670                 b = 1;
+1436  0682 06 01        	ld b, 1
+1437  0684 C3 D4 06     	jp l_127
+1438  0687              l_126:
+1439  0687              ; 671             } else if (a == 0x0D) { // Сохранить и выйти из редактирования
+1440  0687 FE 0D        	cp 13
+1441  0689 C2 94 06     	jp nz, l_128
+1442  068C              ; 672                 b = 1;
+1443  068C 06 01        	ld b, 1
+1444  068E              ; 673                 ftpSettingsEditViewSaveField();
+1445  068E CD E1 05     	call ftpsettingseditviewsavefield
+1446  0691 C3 D4 06     	jp l_129
+1447  0694              l_128:
+1448  0694              ; 674             } else if (a >= 0x20) {
+1449  0694 FE 20        	cp 32
+1450  0696 DA D4 06     	jp c, l_130
+1451  0699              ; 675                 if (a < 0x7F) { //Ввод символа
+1452  0699 FE 7F        	cp 127
+1453  069B D2 BC 06     	jp nc, l_132
+1454  069E              ; 676                     c = a;
+1455  069E 4F           	ld c, a
+1456  069F              ; 677                     // Если достигли предела - то перемещаем курсор на 1 назад
+1457  069F              ; 678                     a = ftpSettingsEditViewEditPos;
+1458  069F 3A 88 09     	ld a, (ftpsettingseditvieweditpos)
+1459  06A2              ; 679                     if (a >= 15) {
+1460  06A2 FE 0F        	cp 15
+1461  06A4 DA A8 06     	jp c, l_134
+1462  06A7              ; 680                         a--;
+1463  06A7 3D           	dec a
+1464  06A8              l_134:
+1465  06A8              ; 681                     }
+1466  06A8              ; 682                     ftpSettingsEditViewEditPos = a;
+1467  06A8 32 88 09     	ld (ftpsettingseditvieweditpos), a
+1468  06AB              ; 683
+1469  06AB              ; 684                     //Сохраняем символ
+1470  06AB              ; 685                     a = c;
+1471  06AB 79           	ld a, c
+1472  06AC              ; 686                     ftpSettingsEditViewSetValueA();
+1473  06AC CD E6 06     	call ftpsettingseditviewsetvaluea
+1474  06AF              ; 687                     a = ftpSettingsEditViewEditPos;
+1475  06AF 3A 88 09     	ld a, (ftpsettingseditvieweditpos)
+1476  06B2              ; 688                     a++;
+1477  06B2 3C           	inc a
+1478  06B3              ; 689                     ftpSettingsEditViewEditPos = a;
+1479  06B3 32 88 09     	ld (ftpsettingseditvieweditpos), a
+1480  06B6              ; 690                     ftpSettingsEditViewSetEditCursor();
+1481  06B6 CD 03 07     	call ftpsettingseditviewseteditcursor
+1482  06B9 C3 D4 06     	jp l_133
+1483  06BC              l_132:
+1484  06BC              ; 691                 } else if (a == 0x7F) { //Забой... (удаление символа)
+1485  06BC FE 7F        	cp 127
+1486  06BE C2 D4 06     	jp nz, l_136
+1487  06C1              ; 692                     if ((a = ftpSettingsEditViewEditPos) > 0) {
+1488  06C1 3A 88 09     	ld a, (ftpsettingseditvieweditpos)
+1489  06C4 B7           	or a
+1490  06C5 CA D4 06     	jp z, l_138
+1491  06C8              ; 693                         a--;
+1492  06C8 3D           	dec a
+1493  06C9              ; 694                         ftpSettingsEditViewEditPos = a;
+1494  06C9 32 88 09     	ld (ftpsettingseditvieweditpos), a
+1495  06CC              ; 695                         ftpSettingsEditViewSetEditCursor();
+1496  06CC CD 03 07     	call ftpsettingseditviewseteditcursor
+1497  06CF              ; 696                         a = ' ';
+1498  06CF 3E 20        	ld a, 32
+1499  06D1              ; 697                         ftpSettingsEditViewSetValueA();
+1500  06D1 CD E6 06     	call ftpsettingseditviewsetvaluea
+1501  06D4              l_138:
+1502  06D4              l_136:
+1503  06D4              l_133:
+1504  06D4              l_130:
+1505  06D4              l_129:
+1506  06D4              l_127:
+1507  06D4              ; 698                     }
+1508  06D4              ; 699                 }
+1509  06D4              ; 700             }
+1510  06D4              ; 701
+1511  06D4              ; 702             a = b;
+1512  06D4 78           	ld a, b
+1513  06D5              ; 703             a -= 1;
+1514  06D5 D6 01        	sub 1
+1515  06D7              l_124:
+1516  06D7 C2 7A 06     	jp nz, l_123
+1517  06DA C1           	pop bc
+1518  06DB              ; 704         } while (flag_nz);
+1519  06DB              ; 705     }
+1520  06DB              ; 706
+1521  06DB              ; 707     a = 0x00;
+1522  06DB 3E 00        	ld a, 0
+1523  06DD              ; 708     inverceAddress = a;
+1524  06DD 32 D3 F3     	ld (inverceaddress), a
+1525  06E0              ; 709
+1526  06E0              ; 710     showFtpSettingsEditView();
+1527  06E0 CD 86 04     	call showftpsettingseditview
+1528  06E3              ; 711     ftpSettingsEditViewDataUpdate();
+1529  06E3 C3 11 07     	jp ftpsettingseditviewdataupdate
+1530  06E6              ; 712 }
+1531  06E6              ; 713
+1532  06E6              ; 714 void ftpSettingsEditViewSetValueA() {
+1533  06E6              ftpsettingseditviewsetvaluea:
+1534  06E6              ; 715     push_pop(hl) {
+1535  06E6 E5           	push hl
+1536  06E7              ; 716         push_pop(bc) {
+1537  06E7 C5           	push bc
+1538  06E8              ; 717             b = a;
+1539  06E8 47           	ld b, a
+1540  06E9              ; 718             //Сохраним символ в ftpSettingsEditViewEditValue
+1541  06E9              ; 719             hl = ftpSettingsEditViewEditValue;
+1542  06E9 21 70 09     	ld hl, ftpsettingseditvieweditvalue
+1543  06EC              ; 720             a = ftpSettingsEditViewEditPos;
+1544  06EC 3A 88 09     	ld a, (ftpsettingseditvieweditpos)
+1545  06EF              ; 721             a += l;
+1546  06EF 85           	add l
+1547  06F0              ; 722             l = a;
+1548  06F0 6F           	ld l, a
+1549  06F1              ; 723             if (flag_c) {
+1550  06F1 D2 F5 06     	jp nc, l_140
+1551  06F4              ; 724                 h++;
+1552  06F4 24           	inc h
+1553  06F5              l_140:
+1554  06F5              ; 725             }
+1555  06F5              ; 726             *hl = b;
+1556  06F5 70           	ld (hl), b
+1557  06F6              ; 727             //Отрисуем символ на экране
+1558  06F6              ; 728             ftpSettingsEditViewSetEditCursor();
+1559  06F6 CD 03 07     	call ftpsettingseditviewseteditcursor
+1560  06F9              ; 729             a = b;
+1561  06F9 78           	ld a, b
+1562  06FA              ; 730             printChatA();
+1563  06FA CD 0F F8     	call printchata
+1564  06FD              ; 731             ftpSettingsEditViewSetEditCursor();
+1565  06FD CD 03 07     	call ftpsettingseditviewseteditcursor
+1566  0700 C1           	pop bc
+1567  0701 E1           	pop hl
+1568  0702 C9           	ret
+1569  0703              ; 732         }
+1570  0703              ; 733     }
+1571  0703              ; 734 }
+1572  0703              ; 735
+1573  0703              ; 736 void ftpSettingsEditViewSetEditCursor() {
+1574  0703              ftpsettingseditviewseteditcursor:
+1575  0703              ; 737     push_pop(hl) {
+1576  0703 E5           	push hl
+1577  0704              ; 738         hl = ftpSettingsEditViewEditValuePos;
+1578  0704 2A 6E 09     	ld hl, (ftpsettingseditvieweditvaluepos)
+1579  0707              ; 739         a = ftpSettingsEditViewEditPos;
+1580  0707 3A 88 09     	ld a, (ftpsettingseditvieweditpos)
+1581  070A              ; 740         a += l;
+1582  070A 85           	add l
+1583  070B              ; 741         l = a;
+1584  070B 6F           	ld l, a
+1585  070C              ; 742         setPosCursor();
+1586  070C CD 3C F8     	call setposcursor
+1587  070F E1           	pop hl
+1588  0710 C9           	ret
+1589  0711              ; 743     }
+1590  0711              ; 744 }
+1591  0711              ; 745
+1592  0711              ; 746 void ftpSettingsEditViewDataUpdate() {
+1593  0711              ftpsettingseditviewdataupdate:
+1594  0711              ; 747     if ((a = rootViewCurrentView) != rootViewCurrentFTPSettingsEditView) {
+1595  0711 3A E7 08     	ld a, (rootviewcurrentview)
+1596  0714 FE 02        	cp 2
+1597  0716 CA 1A 07     	jp z, l_142
+1598  0719              ; 748         return;
+1599  0719 C9           	ret
+1600  071A              l_142:
+1601  071A              ; 749     }
+1602  071A              ; 750
+1603  071A              ; 751     push_pop(bc) {
+1604  071A C5           	push bc
+1605  071B              ; 752         b = 0;
+1606  071B 06 00        	ld b, 0
+1607  071D              ; 753         do {
+1608  071D              l_144:
+1609  071D              ; 754             if ((a = ftpSettingsEditViewCurrentPos) == b) {
+1610  071D 3A 6D 09     	ld a, (ftpsettingseditviewcurrentpos)
+1611  0720 B8           	cp b
+1612  0721 C2 29 07     	jp nz, l_147
+1613  0724              ; 755                 a = 0xFF;
+1614  0724 3E FF        	ld a, 255
+1615  0726              ; 756                 inverceAddress = a;
+1616  0726 32 D3 F3     	ld (inverceaddress), a
+1617  0729              l_147:
+1618  0729              ; 757             }
+1619  0729              ; 758
+1620  0729              ; 759             a = b;
+1621  0729 78           	ld a, b
+1622  072A              ; 760             ftpSettingsEditViewShowValueA();
+1623  072A CD 3B 07     	call ftpsettingseditviewshowvaluea
+1624  072D              ; 761
+1625  072D              ; 762             a = 0x00;
+1626  072D 3E 00        	ld a, 0
+1627  072F              ; 763             inverceAddress = a;
+1628  072F 32 D3 F3     	ld (inverceaddress), a
+1629  0732              ; 764
+1630  0732              ; 765             b++;
+1631  0732 04           	inc b
+1632  0733              ; 766             a = b;
+1633  0733 78           	ld a, b
+1634  0734              ; 767             a -= 5;
+1635  0734 D6 05        	sub 5
+1636  0736              l_145:
+1637  0736 C2 1D 07     	jp nz, l_144
+1638  0739 C1           	pop bc
+1639  073A C9           	ret
+1640  073B              ; 11 void ftpSettingsEditViewShowValueA() {
+1641  073B              ftpsettingseditviewshowvaluea:
+1642  073B              ; 12     if (a == 0) {
+1643  073B B7           	or a
+1644  073C C2 4E 07     	jp nz, l_149
+1645  073F              ; 13         hl = ftpSettingsEditViewIpValPos;
+1646  073F 2A 55 09     	ld hl, (ftpsettingseditviewipvalpos)
+1647  0742              ; 14         setPosCursor();
+1648  0742 CD 3C F8     	call setposcursor
+1649  0745              ; 15
+1650  0745              ; 16         hl = ftpSettingsIpValue;
+1651  0745 21 7C 08     	ld hl, ftpsettingsipvalue
+1652  0748              ; 17         printHLStr();
+1653  0748 CD 18 F8     	call printhlstr
+1654  074B C3 9B 07     	jp l_150
+1655  074E              l_149:
+1656  074E              ; 18     } else if (a == 1) {
+1657  074E FE 01        	cp 1
+1658  0750 C2 62 07     	jp nz, l_151
+1659  0753              ; 19         hl = ftpSettingsEditViewPortValPos;
+1660  0753 2A 57 09     	ld hl, (ftpsettingseditviewportvalpos)
+1661  0756              ; 20         setPosCursor();
+1662  0756 CD 3C F8     	call setposcursor
+1663  0759              ; 21
+1664  0759              ; 22         hl = ftpSettingsPortValue;
+1665  0759 21 8E 08     	ld hl, ftpsettingsportvalue
+1666  075C              ; 23         printHLStr();
+1667  075C CD 18 F8     	call printhlstr
+1668  075F C3 9B 07     	jp l_152
+1669  0762              l_151:
+1670  0762              ; 24     } else if (a == 2) {
+1671  0762 FE 02        	cp 2
+1672  0764 C2 76 07     	jp nz, l_153
+1673  0767              ; 25         hl = ftpSettingsEditViewUserValPos;
+1674  0767 2A 59 09     	ld hl, (ftpsettingseditviewuservalpos)
+1675  076A              ; 26         setPosCursor();
+1676  076A CD 3C F8     	call setposcursor
+1677  076D              ; 27
+1678  076D              ; 28         hl = ftpSettingsUserValue;
+1679  076D 21 A4 08     	ld hl, ftpsettingsuservalue
+1680  0770              ; 29         printHLStr();
+1681  0770 CD 18 F8     	call printhlstr
+1682  0773 C3 9B 07     	jp l_154
+1683  0776              l_153:
+1684  0776              ; 30     } else if (a == 3) {
+1685  0776 FE 03        	cp 3
+1686  0778 C2 8A 07     	jp nz, l_155
+1687  077B              ; 31         hl = ftpSettingsEditViewPasswordValPos;
+1688  077B 2A 5B 09     	ld hl, (ftpsettingseditviewpasswordvalpo)
+1689  077E              ; 32         setPosCursor();
+1690  077E CD 3C F8     	call setposcursor
+1691  0781              ; 33
+1692  0781              ; 34         hl = ftpSettingsEditViewPasswordVal;
+1693  0781 21 5D 09     	ld hl, ftpsettingseditviewpasswordval
+1694  0784              ; 35         printHLStr();
+1695  0784 CD 18 F8     	call printhlstr
+1696  0787 C3 9B 07     	jp l_156
+1697  078A              l_155:
+1698  078A              ; 36     } else if (a == 4) {
+1699  078A FE 04        	cp 4
+1700  078C C2 9B 07     	jp nz, l_157
+1701  078F              ; 37         hl = ftpSettingsEditViewOkLabelPos;
+1702  078F 2A 4C 09     	ld hl, (ftpsettingseditviewoklabelpos)
+1703  0792              ; 38         setPosCursor();
+1704  0792 CD 3C F8     	call setposcursor
+1705  0795              ; 39         hl = ftpSettingsEditViewOkLabel;
+1706  0795 21 4E 09     	ld hl, ftpsettingseditviewoklabel
+1707  0798              ; 40         printHLStr();
+1708  0798 CD 18 F8     	call printhlstr
+1709  079B              l_157:
+1710  079B              l_156:
+1711  079B              l_154:
+1712  079B              l_152:
+1713  079B              l_150:
+1714  079B C9           	ret
+1715  079C              ; 12 uint8_t myFont[] =
+1716  079C              myfont:
+1717  079C 00           	db 0
+1718  079D 00           	db 0
+1719  079E 00           	db 0
+1720  079F 00           	db 0
+1721  07A0 00           	db 0
+1722  07A1 00           	db 0
+1723  07A2 00           	db 0
+1724  07A3 00           	db 0
+1725  07A4 00           	db 0
+1726  07A5 00           	db 0
+1727  07A6 1F           	db 31
+1728  07A7 10           	db 16
+1729  07A8 10           	db 16
+1730  07A9 13           	db 19
+1731  07AA 12           	db 18
+1732  07AB 12           	db 18
+1733  07AC 12           	db 18
+1734  07AD 12           	db 18
+1735  07AE 13           	db 19
+1736  07AF 10           	db 16
+1737  07B0 10           	db 16
+1738  07B1 1F           	db 31
+1739  07B2 00           	db 0
+1740  07B3 00           	db 0
+1741  07B4 00           	db 0
+1742  07B5 00           	db 0
+1743  07B6 3E           	db 62
+1744  07B7 02           	db 2
+1745  07B8 02           	db 2
+1746  07B9 32           	db 50
+1747  07BA 12           	db 18
+1748  07BB 12           	db 18
+1749  07BC 12           	db 18
+1750  07BD 12           	db 18
+1751  07BE 32           	db 50
+1752  07BF 02           	db 2
+1753  07C0 02           	db 2
+1754  07C1 3E           	db 62
+1755  07C2 00           	db 0
+1756  07C3 00           	db 0
+1757  07C4 12           	db 18
+1758  07C5 12           	db 18
+1759  07C6 12           	db 18
+1760  07C7 12           	db 18
+1761  07C8 12           	db 18
+1762  07C9 12           	db 18
+1763  07CA 12           	db 18
+1764  07CB 12           	db 18
+1765  07CC 00           	db 0
+1766  07CD 00           	db 0
+1767  07CE 3F           	db 63
+1768  07CF 00           	db 0
+1769  07D0 00           	db 0
+1770  07D1 3F           	db 63
+1771  07D2 00           	db 0
+1772  07D3 00           	db 0
+1773  07D4              ; 11 uint8_t wifiSettingsViewX = 0x00;
+1774  07D4              wifisettingsviewx:
+1775  07D4 00           	db 0
+1776  07D5              ; 12 uint8_t wifiSettingsViewY = 0x01;
+1777  07D5              wifisettingsviewy:
+1778  07D5 01           	db 1
+1779  07D6              ; 13 uint8_t wifiSettingsViewEX = 29;
+1780  07D6              wifisettingsviewex:
+1781  07D6 1D           	db 29
+1782  07D7              ; 14 uint8_t wifiSettingsViewEY = 6;
+1783  07D7              wifisettingsviewey:
+1784  07D7 06           	db 6
+1785  07D8              ; 15 uint16_t wifiSettingsPos = 0x0108;
+1786  07D8              wifisettingspos:
+1787  07D8 08 01        	dw 264
+1788  07DA              ; 16 uint8_t wifiSettingsLabel[] = " WI-FI SETTINGS ";
+1789  07DA              wifisettingslabel:
+1790  07DA 20           	db 32
+1791  07DB 57           	db 87
+1792  07DC 49           	db 73
+1793  07DD 2D           	db 45
+1794  07DE 46           	db 70
+1795  07DF 49           	db 73
+1796  07E0 20           	db 32
+1797  07E1 53           	db 83
+1798  07E2 45           	db 69
+1799  07E3 54           	db 84
+1800  07E4 54           	db 84
+1801  07E5 49           	db 73
+1802  07E6 4E           	db 78
+1803  07E7 47           	db 71
+1804  07E8 53           	db 83
+1805  07E9 20           	db 32
+1806  07EA 00           	ds 1
+1807  07EB              ; 17 uint8_t wifiSettingsSsidLabel[] = "SSID:";
+1808  07EB              wifisettingsssidlabel:
+1809  07EB 53           	db 83
+1810  07EC 53           	db 83
+1811  07ED 49           	db 73
+1812  07EE 44           	db 68
+1813  07EF 3A           	db 58
+1814  07F0 00           	ds 1
+1815  07F1              ; 18 uint8_t wifiSettingsIpLabel[] = "IP  :";
+1816  07F1              wifisettingsiplabel:
+1817  07F1 49           	db 73
+1818  07F2 50           	db 80
+1819  07F3 20           	db 32
+1820  07F4 20           	db 32
+1821  07F5 3A           	db 58
+1822  07F6 00           	ds 1
+1823  07F7              ; 19 uint8_t wifiSettingsMacLabel[] = "MAC :";
+1824  07F7              wifisettingsmaclabel:
+1825  07F7 4D           	db 77
+1826  07F8 41           	db 65
+1827  07F9 43           	db 67
+1828  07FA 20           	db 32
+1829  07FB 3A           	db 58
+1830  07FC 00           	ds 1
+1831  07FD              ; 21 uint16_t wifiSettingsSsidLabelPos = 0x0202;
+1832  07FD              wifisettingsssidlabelpos:
+1833  07FD 02 02        	dw 514
+1834  07FF              ; 22 uint16_t wifiSettingsIpLabelPos = 0x0302;
+1835  07FF              wifisettingsiplabelpos:
+1836  07FF 02 03        	dw 770
+1837  0801              ; 23 uint16_t wifiSettingsMacLabelPos = 0x0402;
+1838  0801              wifisettingsmaclabelpos:
+1839  0801 02 04        	dw 1026
+1840  0803              ; 25 uint16_t wifiSettingsSsidValPos = 0x0208;
+1841  0803              wifisettingsssidvalpos:
+1842  0803 08 02        	dw 520
+1843  0805              ; 26 uint8_t wifiSettingsSsidVal[20] = "K159";
+1844  0805              wifisettingsssidval:
+1845  0805 4B           	db 75
+1846  0806 31           	db 49
+1847  0807 35           	db 53
+1848  0808 39           	db 57
+1849  0809 00 00 00...  	ds 16
+1850  0819              ; 27 uint16_t wifiSettingsIpValPos = 0x0308;
+1851  0819              wifisettingsipvalpos:
+1852  0819 08 03        	dw 776
+1853  081B              ; 28 uint8_t wifiSettingsIpVal[20] = "192.168.1.127";
+1854  081B              wifisettingsipval:
+1855  081B 31           	db 49
+1856  081C 39           	db 57
+1857  081D 32           	db 50
+1858  081E 2E           	db 46
+1859  081F 31           	db 49
+1860  0820 36           	db 54
+1861  0821 38           	db 56
+1862  0822 2E           	db 46
+1863  0823 31           	db 49
+1864  0824 2E           	db 46
+1865  0825 31           	db 49
+1866  0826 32           	db 50
+1867  0827 37           	db 55
+1868  0828 00 00 00...  	ds 7
+1869  082F              ; 29 uint16_t wifiSettingsMacValPos = 0x0408;
+1870  082F              wifisettingsmacvalpos:
+1871  082F 08 04        	dw 1032
+1872  0831              ; 30 uint8_t wifiSettingsMacVal[20] = "10:98:C3:DC:88:06";
+1873  0831              wifisettingsmacval:
+1874  0831 31           	db 49
+1875  0832 30           	db 48
+1876  0833 3A           	db 58
+1877  0834 39           	db 57
+1878  0835 38           	db 56
+1879  0836 3A           	db 58
+1880  0837 43           	db 67
+1881  0838 33           	db 51
+1882  0839 3A           	db 58
+1883  083A 44           	db 68
+1884  083B 43           	db 67
+1885  083C 3A           	db 58
+1886  083D 38           	db 56
+1887  083E 38           	db 56
+1888  083F 3A           	db 58
+1889  0840 30           	db 48
+1890  0841 36           	db 54
+1891  0842 00 00 00     	ds 3
+1892  0845              ; 11 uint8_t ftpSettingsViewX = 30;
+1893  0845              ftpsettingsviewx:
+1894  0845 1E           	db 30
+1895  0846              ; 12 uint8_t ftpSettingsViewY = 1;
+1896  0846              ftpsettingsviewy:
+1897  0846 01           	db 1
+1898  0847              ; 13 uint8_t ftpSettingsViewEX = 63; //54;
+1899  0847              ftpsettingsviewex:
+1900  0847 3F           	db 63
+1901  0848              ; 14 uint8_t ftpSettingsViewEY = 6;
+1902  0848              ftpsettingsviewey:
+1903  0848 06           	db 6
+1904  0849              ; 16 uint16_t ftpSettingsLabelPos = 0x0127;
+1905  0849              ftpsettingslabelpos:
+1906  0849 27 01        	dw 295
+1907  084B              ; 17 uint8_t ftpSettingsLabel[] = " FTP SETTINGS ";
+1908  084B              ftpsettingslabel:
+1909  084B 20           	db 32
+1910  084C 46           	db 70
+1911  084D 54           	db 84
+1912  084E 50           	db 80
+1913  084F 20           	db 32
+1914  0850 53           	db 83
+1915  0851 45           	db 69
+1916  0852 54           	db 84
+1917  0853 54           	db 84
+1918  0854 49           	db 73
+1919  0855 4E           	db 78
+1920  0856 47           	db 71
+1921  0857 53           	db 83
+1922  0858 20           	db 32
+1923  0859 00           	ds 1
+1924  085A              ; 20 uint16_t ftpSettingsIpLabelPos = 0x0220;
+1925  085A              ftpsettingsiplabelpos:
+1926  085A 20 02        	dw 544
+1927  085C              ; 21 uint8_t ftpSettingsIpLabel[] = "IP:";
+1928  085C              ftpsettingsiplabel:
+1929  085C 49           	db 73
+1930  085D 50           	db 80
+1931  085E 3A           	db 58
+1932  085F 00           	ds 1
+1933  0860              ; 23 uint16_t ftpSettingsPortLabelPos = 0x0234;
+1934  0860              ftpsettingsportlabelpos:
+1935  0860 34 02        	dw 564
+1936  0862              ; 24 uint8_t ftpSettingsPortLabel[] = "PORT:";
+1937  0862              ftpsettingsportlabel:
+1938  0862 50           	db 80
+1939  0863 4F           	db 79
+1940  0864 52           	db 82
+1941  0865 54           	db 84
+1942  0866 3A           	db 58
+1943  0867 00           	ds 1
+1944  0868              ; 26 uint16_t ftpSettingsUserLabelPos = 0x0320;
+1945  0868              ftpsettingsuserlabelpos:
+1946  0868 20 03        	dw 800
+1947  086A              ; 27 uint8_t ftpSettingsUserLabel[] = "USER:";
+1948  086A              ftpsettingsuserlabel:
+1949  086A 55           	db 85
+1950  086B 53           	db 83
+1951  086C 45           	db 69
+1952  086D 52           	db 82
+1953  086E 3A           	db 58
+1954  086F 00           	ds 1
+1955  0870              ; 29 uint16_t ftpSettingsStatusLabelPos = 0x0420;
+1956  0870              ftpsettingsstatuslabelpos:
+1957  0870 20 04        	dw 1056
+1958  0872              ; 30 uint8_t ftpSettingsStatusLabel[] = "STATUS:";
+1959  0872              ftpsettingsstatuslabel:
+1960  0872 53           	db 83
+1961  0873 54           	db 84
+1962  0874 41           	db 65
+1963  0875 54           	db 84
+1964  0876 55           	db 85
+1965  0877 53           	db 83
+1966  0878 3A           	db 58
+1967  0879 00           	ds 1
+1968  087A              ; 32 uint16_t ftpSettingsIpValuePos = 0x0224;
+1969  087A              ftpsettingsipvaluepos:
+1970  087A 24 02        	dw 548
+1971  087C              ; 33 uint8_t ftpSettingsIpValue[16] = "100.100.100.100";
+1972  087C              ftpsettingsipvalue:
+1973  087C 31           	db 49
+1974  087D 30           	db 48
+1975  087E 30           	db 48
+1976  087F 2E           	db 46
+1977  0880 31           	db 49
+1978  0881 30           	db 48
+1979  0882 30           	db 48
+1980  0883 2E           	db 46
+1981  0884 31           	db 49
+1982  0885 30           	db 48
+1983  0886 30           	db 48
+1984  0887 2E           	db 46
+1985  0888 31           	db 49
+1986  0889 30           	db 48
+1987  088A 30           	db 48
+1988  088B 00           	ds 1
+1989  088C              ; 35 uint16_t ftpSettingsPortValuePos = 0x023A;
+1990  088C              ftpsettingsportvaluepos:
+1991  088C 3A 02        	dw 570
+1992  088E              ; 36 uint8_t ftpSettingsPortValue[6] = "21";
+1993  088E              ftpsettingsportvalue:
+1994  088E 32           	db 50
+1995  088F 31           	db 49
+1996  0890 00 00 00 00  	ds 4
+1997  0894              ; 38 uint16_t ftpSettingsStatusValuePos = 0x0428;
+1998  0894              ftpsettingsstatusvaluepos:
+1999  0894 28 04        	dw 1064
+2000  0896              ; 39 uint8_t ftpSettingsStatusValue[12] = "DISCONNECT";
+2001  0896              ftpsettingsstatusvalue:
+2002  0896 44           	db 68
+2003  0897 49           	db 73
+2004  0898 53           	db 83
+2005  0899 43           	db 67
+2006  089A 4F           	db 79
+2007  089B 4E           	db 78
+2008  089C 4E           	db 78
+2009  089D 45           	db 69
+2010  089E 43           	db 67
+2011  089F 54           	db 84
+2012  08A0 00 00        	ds 2
+2013  08A2              ; 41 uint16_t ftpSettingsUserValuePos = 0x0326;
+2014  08A2              ftpsettingsuservaluepos:
+2015  08A2 26 03        	dw 806
+2016  08A4              ; 42 uint8_t ftpSettingsUserValue[16] = "ESP8266";
+2017  08A4              ftpsettingsuservalue:
+2018  08A4 45           	db 69
+2019  08A5 53           	db 83
+2020  08A6 50           	db 80
+2021  08A7 38           	db 56
+2022  08A8 32           	db 50
+2023  08A9 36           	db 54
+2024  08AA 36           	db 54
+2025  08AB 00 00 00...  	ds 9
+2026  08B4              ; 11 uint8_t diskViewX = 0;
+2027  08B4              diskviewx:
+2028  08B4 00           	db 0
+2029  08B5              ; 12 uint8_t diskViewY = 7;
+2030  08B5              diskviewy:
+2031  08B5 07           	db 7
+2032  08B6              ; 13 uint8_t diskViewEX = 29; //54;
+2033  08B6              diskviewex:
+2034  08B6 1D           	db 29
+2035  08B7              ; 14 uint8_t diskViewEY = 25;
+2036  08B7              diskviewey:
+2037  08B7 19           	db 25
+2038  08B8              ; 16 uint16_t diskViewLabelPos = 0x0709;
+2039  08B8              diskviewlabelpos:
+2040  08B8 09 07        	dw 1801
+2041  08BA              ; 17 uint8_t diskViewLabel[] = " DISK:   ";
+2042  08BA              diskviewlabel:
+2043  08BA 20           	db 32
+2044  08BB 44           	db 68
+2045  08BC 49           	db 73
+2046  08BD 53           	db 83
+2047  08BE 4B           	db 75
+2048  08BF 3A           	db 58
+2049  08C0 20           	db 32
+2050  08C1 20           	db 32
+2051  08C2 20           	db 32
+2052  08C3 00           	ds 1
+2053  08C4              ; 19 uint8_t diskViewDiskNum = 'B';
+2054  08C4              diskviewdisknum:
+2055  08C4 42           	db 66
+2056  08C5              ; 20 uint8_t diskViewListCount = 0;
+2057  08C5              diskviewlistcount:
+2058  08C5 00           	db 0
+2059  08C6              ; 21 uint8_t diskViewCurrPos = 1;
+2060  08C6              diskviewcurrpos:
+2061  08C6 01           	db 1
+2062  08C7              ; 22 uint16_t diskViewListNamePos = 0x0902;
+2063  08C7              diskviewlistnamepos:
+2064  08C7 02 09        	dw 2306
+2065  08C9              ; 24 uint16_t diskViewListDirPos = 0x0802;
+2066  08C9              diskviewlistdirpos:
+2067  08C9 02 08        	dw 2050
+2068  08CB              ; 25 uint8_t diskViewListDirLabel[] = " ..       ";
+2069  08CB              diskviewlistdirlabel:
+2070  08CB 20           	db 32
+2071  08CC 2E           	db 46
+2072  08CD 2E           	db 46
+2073  08CE 20           	db 32
+2074  08CF 20           	db 32
+2075  08D0 20           	db 32
+2076  08D1 20           	db 32
+2077  08D2 20           	db 32
+2078  08D3 20           	db 32
+2079  08D4 20           	db 32
+2080  08D5 00           	ds 1
+2081  08D6              ; 27 uint16_t diskViewDriveNamePos = 0x0710;
+2082  08D6              diskviewdrivenamepos:
+2083  08D6 10 07        	dw 1808
+2084  08D8              ; 29 uint16_t diskStartNewFile = 0x0000;
+2085  08D8              diskstartnewfile:
+2086  08D8 00 00        	dw 0
+2087  08DA              ; 11 uint8_t ftpViewX = 30;
+2088  08DA              ftpviewx:
+2089  08DA 1E           	db 30
+2090  08DB              ; 12 uint8_t ftpViewY = 7;
+2091  08DB              ftpviewy:
+2092  08DB 07           	db 7
+2093  08DC              ; 13 uint8_t ftpViewEX = 63;
+2094  08DC              ftpviewex:
+2095  08DC 3F           	db 63
+2096  08DD              ; 14 uint8_t ftpViewEY = 25;
+2097  08DD              ftpviewey:
+2098  08DD 19           	db 25
+2099  08DE              ; 16 uint16_t ftpLabelPos = 0x0728;
+2100  08DE              ftplabelpos:
+2101  08DE 28 07        	dw 1832
+2102  08E0              ; 17 uint8_t ftpLabel[] = " FTP: ";
+2103  08E0              ftplabel:
+2104  08E0 20           	db 32
+2105  08E1 46           	db 70
+2106  08E2 54           	db 84
+2107  08E3 50           	db 80
+2108  08E4 3A           	db 58
+2109  08E5 20           	db 32
+2110  08E6 00           	ds 1
+2111  08E7              ; 16 uint8_t rootViewCurrentView = 0;
+2112  08E7              rootviewcurrentview:
+2113  08E7 00           	db 0
+2114  08E8              ; 18 uint16_t rootViewHelpStrPos = 0x0600;
+2115  08E8              rootviewhelpstrpos:
+2116  08E8 00 06        	dw 1536
+2117  08EA              ; 19 uint8_t rootViewHelpStr[] = " F1: ..          F2: WI-FI          F3: FTP          F4: QUIT";
+2118  08EA              rootviewhelpstr:
+2119  08EA 20           	db 32
+2120  08EB 46           	db 70
+2121  08EC 31           	db 49
+2122  08ED 3A           	db 58
+2123  08EE 20           	db 32
+2124  08EF 2E           	db 46
+2125  08F0 2E           	db 46
+2126  08F1 20           	db 32
+2127  08F2 20           	db 32
+2128  08F3 20           	db 32
+2129  08F4 20           	db 32
+2130  08F5 20           	db 32
+2131  08F6 20           	db 32
+2132  08F7 20           	db 32
+2133  08F8 20           	db 32
+2134  08F9 20           	db 32
+2135  08FA 20           	db 32
+2136  08FB 46           	db 70
+2137  08FC 32           	db 50
+2138  08FD 3A           	db 58
+2139  08FE 20           	db 32
+2140  08FF 57           	db 87
+2141  0900 49           	db 73
+2142  0901 2D           	db 45
+2143  0902 46           	db 70
+2144  0903 49           	db 73
+2145  0904 20           	db 32
+2146  0905 20           	db 32
+2147  0906 20           	db 32
+2148  0907 20           	db 32
+2149  0908 20           	db 32
+2150  0909 20           	db 32
+2151  090A 20           	db 32
+2152  090B 20           	db 32
+2153  090C 20           	db 32
+2154  090D 20           	db 32
+2155  090E 46           	db 70
+2156  090F 33           	db 51
+2157  0910 3A           	db 58
+2158  0911 20           	db 32
+2159  0912 46           	db 70
+2160  0913 54           	db 84
+2161  0914 50           	db 80
+2162  0915 20           	db 32
+2163  0916 20           	db 32
+2164  0917 20           	db 32
+2165  0918 20           	db 32
+2166  0919 20           	db 32
+2167  091A 20           	db 32
+2168  091B 20           	db 32
+2169  091C 20           	db 32
+2170  091D 20           	db 32
+2171  091E 20           	db 32
+2172  091F 46           	db 70
+2173  0920 34           	db 52
+2174  0921 3A           	db 58
+2175  0922 20           	db 32
+2176  0923 51           	db 81
+2177  0924 55           	db 85
+2178  0925 49           	db 73
+2179  0926 54           	db 84
+2180  0927 00           	ds 1
+2181  0928              ; 21 uint8_t rootViewOldKey = 0xFF;
+2182  0928              rootviewoldkey:
+2183  0928 FF           	db 255
+2184  0929              ; 11 uint8_t ftpSettingsEditViewX = 14;
+2185  0929              ftpsettingseditviewx:
+2186  0929 0E           	db 14
+2187  092A              ; 12 uint8_t ftpSettingsEditViewY = 4;
+2188  092A              ftpsettingseditviewy:
+2189  092A 04           	db 4
+2190  092B              ; 13 uint8_t ftpSettingsEditViewEX = 50;
+2191  092B              ftpsettingseditviewex:
+2192  092B 32           	db 50
+2193  092C              ; 14 uint8_t ftpSettingsEditViewEY = 20;
+2194  092C              ftpsettingseditviewey:
+2195  092C 14           	db 20
+2196  092D              ; 16 uint16_t ftpSettingsEditViewLabelPos = 0x0418;
+2197  092D              ftpsettingseditviewlabelpos:
+2198  092D 18 04        	dw 1048
+2199  092F              ; 17 uint8_t ftpSettingsEditViewLabel[] = " FTP SETTINGS ";
+2200  092F              ftpsettingseditviewlabel:
+2201  092F 20           	db 32
+2202  0930 46           	db 70
+2203  0931 54           	db 84
+2204  0932 50           	db 80
+2205  0933 20           	db 32
+2206  0934 53           	db 83
+2207  0935 45           	db 69
+2208  0936 54           	db 84
+2209  0937 54           	db 84
+2210  0938 49           	db 73
+2211  0939 4E           	db 78
+2212  093A 47           	db 71
+2213  093B 53           	db 83
+2214  093C 20           	db 32
+2215  093D 00           	ds 1
+2216  093E              ; 19 uint16_t ftpSettingsEditViewIpLabelPos = 0x0713;
+2217  093E              ftpsettingseditviewiplabelpos:
+2218  093E 13 07        	dw 1811
+2219  0940              ; 20 uint16_t ftpSettingsEditViewPortLabelPos = 0x0911;
+2220  0940              ftpsettingseditviewportlabelpos:
+2221  0940 11 09        	dw 2321
+2222  0942              ; 21 uint16_t ftpSettingsEditViewUserLabelPos = 0x0B11;
+2223  0942              ftpsettingseditviewuserlabelpos:
+2224  0942 11 0B        	dw 2833
+2225  0944              ; 23 uint16_t ftpSettingsEditViewPasswordLabelPos = 0x0D11;
+2226  0944              ftpsettingseditviewpasswordlabel:
+2227  0944 11 0D        	dw 3345
+2228  0946              ; 24 uint8_t ftpSettingsEditViewPasswordLabel[] = "PASS:";
+2229  0946              ftpsettingseditviewpasswordlabel_0:
+2230  0946 50           	db 80
+2231  0947 41           	db 65
+2232  0948 53           	db 83
+2233  0949 53           	db 83
+2234  094A 3A           	db 58
+2235  094B 00           	ds 1
+2236  094C              ; 26 uint16_t ftpSettingsEditViewOkLabelPos = 0x101D;
+2237  094C              ftpsettingseditviewoklabelpos:
+2238  094C 1D 10        	dw 4125
+2239  094E              ; 27 uint8_t ftpSettingsEditViewOkLabel[] = "  OK  ";
+2240  094E              ftpsettingseditviewoklabel:
+2241  094E 20           	db 32
+2242  094F 20           	db 32
+2243  0950 4F           	db 79
+2244  0951 4B           	db 75
+2245  0952 20           	db 32
+2246  0953 20           	db 32
+2247  0954 00           	ds 1
+2248  0955              ; 29 uint16_t ftpSettingsEditViewIpValPos = 0x0719;
+2249  0955              ftpsettingseditviewipvalpos:
+2250  0955 19 07        	dw 1817
+2251  0957              ; 30 uint16_t ftpSettingsEditViewPortValPos = 0x0919;
+2252  0957              ftpsettingseditviewportvalpos:
+2253  0957 19 09        	dw 2329
+2254  0959              ; 31 uint16_t ftpSettingsEditViewUserValPos = 0x0B19;
+2255  0959              ftpsettingseditviewuservalpos:
+2256  0959 19 0B        	dw 2841
+2257  095B              ; 32 uint16_t ftpSettingsEditViewPasswordValPos = 0x0D19;
+2258  095B              ftpsettingseditviewpasswordvalpo:
+2259  095B 19 0D        	dw 3353
+2260  095D              ; 33 uint8_t ftpSettingsEditViewPasswordVal[16] = "ESP8266";
+2261  095D              ftpsettingseditviewpasswordval:
+2262  095D 45           	db 69
+2263  095E 53           	db 83
+2264  095F 50           	db 80
+2265  0960 38           	db 56
+2266  0961 32           	db 50
+2267  0962 36           	db 54
+2268  0963 36           	db 54
+2269  0964 00 00 00...  	ds 9
+2270  096D              ; 35 uint8_t ftpSettingsEditViewCurrentPos = 0;
+2271  096D              ftpsettingseditviewcurrentpos:
+2272  096D 00           	db 0
+2273  096E              ; 37 uint16_t ftpSettingsEditViewEditValuePos = 0x0000;
+2274  096E              ftpsettingseditvieweditvaluepos:
+2275  096E 00 00        	dw 0
+2276  0970              ; 38 uint8_t ftpSettingsEditViewEditValue[24] = "";
+2277  0970              ftpsettingseditvieweditvalue:
+2278  0970 00 00 00...  	ds 24
+2279  0988              ; 39 uint8_t ftpSettingsEditViewEditPos = 0;
+2280  0988              ftpsettingseditvieweditpos:
+2281  0988 00           	db 0
+2282  0989              ; 11 void createTestFile() {
+2283  0989              createtestfile:
+2284  0989              ; 12     push_pop(hl) {
+2285  0989 E5           	push hl
+2286  098A              ; 13         a = diskViewDiskNum;
+2287  098A 3A C4 08     	ld a, (diskviewdisknum)
+2288  098D              ; 14         ordos_wnd();
+2289  098D CD D6 BF     	call ordos_wnd
+2290  0990              ; 15
+2291  0990              ; 16         ordos_mxdsk();
+2292  0990 CD B8 BF     	call ordos_mxdsk
+2293  0993              ; 17         diskStartNewFile = hl;
+2294  0993 22 D8 08     	ld (diskstartnewfile), hl
+2295  0996              ; 18         de = fileTable;
+2296  0996 11 AD 09     	ld de, filetable
+2297  0999              ; 19         b = 0;
+2298  0999 06 00        	ld b, 0
+2299  099B              ; 20         do {
+2300  099B              l_159:
+2301  099B              ; 21             a = *de;
+2302  099B 1A           	ld a, (de)
+2303  099C              ; 22             ordos_wdisk();
+2304  099C CD DF BF     	call ordos_wdisk
+2305  099F              ; 23             hl++;
+2306  099F 23           	inc hl
+2307  09A0              ; 24             de++;
+2308  09A0 13           	inc de
+2309  09A1              ; 25             b++;
+2310  09A1 04           	inc b
+2311  09A2              ; 26             a = b;
+2312  09A2 78           	ld a, b
+2313  09A3              ; 27             a -= 64;
+2314  09A3 D6 40        	sub 64
+2315  09A5              l_160:
+2316  09A5 C2 9B 09     	jp nz, l_159
+2317  09A8              ; 28         } while (flag_nz);
+2318  09A8              ; 29         ordos_stop();
+2319  09A8 CD E2 BF     	call ordos_stop
+2320  09AB E1           	pop hl
+2321  09AC C9           	ret
+2322  09AD              ; 30     }
+2323  09AD              ; 31 }
+2324  09AD              ; 32
+2325  09AD              ; 33 uint8_t fileTable[] = {
+2326  09AD              filetable:
+2327  09AD 42           	db 66
+2328  09AE 4F           	db 79
+2329  09AF 4F           	db 79
+2330  09B0 54           	db 84
+2331  09B1 24           	db 36
+2332  09B2 20           	db 32
+2333  09B3 20           	db 32
+2334  09B4 20           	db 32
+2335  09B5 00           	db 0
+2336  09B6 B4           	db 180
+2337  09B7 30           	db 48
+2338  09B8 00           	db 0
+2339  09B9 00           	db 0
+2340  09BA FF           	db 255
+2341  09BB FF           	db 255
+2342  09BC FF           	db 255
+2343  09BD 21           	db 33
+2344  09BE D0           	db 208
+2345  09BF B4           	db 180
+2346  09C0 CD           	db 205
+2347  09C1 18           	db 24
+2348  09C2 F8           	db 248
+2349  09C3 11           	db 17
+2350  09C4 00           	db 0
+2351  09C5 F7           	db 247
+2352  09C6 3E           	db 62
+2353  09C7 10           	db 16
+2354  09C8 32           	db 50
+2355  09C9 20           	db 32
+2356  09CA F7           	db 247
+2357  09CB AF           	db 175
+2358  09CC 32           	db 50
+2359  09CD 01           	db 1
+2360  09CE F7           	db 247
+2361  09CF 3E           	db 62
+2362  09D0 D0           	db 208
+2363  09D1 CD           	db 205
+2364  09D2 BF           	db 191
+2365  09D3 B4           	db 180
+2366  09D4 06           	db 6
+2367  09D5 05           	db 5
+2368  09D6 3E           	db 62
+2369  09D7 4B           	db 75
+2370  09D8 CD           	db 205
+2371  09D9 BF           	db 191
+2372  09DA B4           	db 180
+2373  09DB 05           	db 5
+2374  09DC C2           	db 194
+2375  09DD 19           	db 25
+2376  09DE B4           	db 180
+2377  09DF 3E           	db 62
+2378  09E0 0B           	db 11
+2379  09E1 CD           	db 205
+2380  09E2 BF           	db 191
+2381  09E3 B4           	db 180
+2382  09E4 1A           	db 26
+2383  09E5 07           	db 7
+2384  09E6 DA           	db 218
+2385  09E7 27           	db 39
+2386  09E8 B4           	db 180
+2387  09E9 CD           	db 205
+2388  09EA 8D           	db 141
+2389  09EB B4           	db 180
+2390  09EC CA           	db 202
+2391  09ED               savebin "test.ORD", 0x00f0, 0xBff
+2392  09ED
+# file closed: main.asm

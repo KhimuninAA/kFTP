@@ -1,0 +1,19 @@
+//
+//  FTPView.h
+//  c8080-KFTP-1
+//
+//  Created by Алексей Химунин on 16.09.2025.
+//
+
+#ifndef FTPView_h
+#define FTPView_h
+
+uint8_t ftpViewX = 30;
+uint8_t ftpViewY = 7;
+uint8_t ftpViewEX = 63;
+uint8_t ftpViewEY = 25;
+
+uint16_t ftpLabelPos = 0x0728;
+uint8_t ftpLabel[] = " FTP: ";
+
+#endif /* FTPView_h */
