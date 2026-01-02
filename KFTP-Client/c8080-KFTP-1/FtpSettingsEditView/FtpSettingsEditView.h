@@ -38,4 +38,6 @@ uint16_t ftpSettingsEditViewEditValuePos = 0x0000;
 uint8_t ftpSettingsEditViewEditValue[24] = "";
 uint8_t ftpSettingsEditViewEditPos = 0;
 
+uint8_t updateFtpStatusTike = 0;
+
 #endif /* FtpSettingsEditView_h */

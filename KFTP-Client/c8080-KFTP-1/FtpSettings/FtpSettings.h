@@ -36,7 +36,11 @@ uint16_t ftpSettingsPortValuePos = 0x023A;
 uint8_t ftpSettingsPortValue[6] = "21";
 
 uint16_t ftpSettingsStatusValuePos = 0x0428;
-uint8_t ftpSettingsStatusValue[12] = "DISCONNECT";
+uint8_t ftpSettingsStatusValue[12] = "-";
+uint8_t ftpSettingsStateVal = 0;
+uint8_t ftpSettingsStateChange = 1;
+uint8_t ftpSettingsStatus0[12] = "DISCONNECT ";
+uint8_t ftpSettingsStatus1[12] = "CONNECT    ";
 
 uint16_t ftpSettingsUserValuePos = 0x0326;
 uint8_t ftpSettingsUserValue[16] = "ESP8266";

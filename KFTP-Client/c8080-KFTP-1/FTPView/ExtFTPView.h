@@ -16,4 +16,10 @@ extern uint8_t ftpViewEY;
 extern uint16_t ftpLabelPos;
 extern uint8_t ftpLabel[7];
 
+extern uint8_t ftpDirList[16 * 24];
+extern uint8_t ftpDirListNext;
+extern uint8_t ftpDirListCount;
+extern uint8_t ftpViewCurrentPos;
+extern uint8_t ftpDirListIsDir;
+
 #endif /* ExtFTPView_h */

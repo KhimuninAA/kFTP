@@ -20,7 +20,6 @@ void setMyFont();
 void setSystemFont();
 
 void showWiFiView();
-void showFtpView();
 void diskView();
 void ftpView();
 
@@ -48,5 +47,8 @@ void ftpSettingsEditView_CopyStrFromHL();
 void ftpSettingsEditViewSetEditCursor();
 void ftpSettingsEditViewSetValueA();
 void ftpSettingsEditViewSaveEditValueToHL();
+void keyboardEvent();
+void clearWiFiViewValData();
+void updateWiFiViewValData();
 
 #endif /* DeclareFunctions_h */

@@ -33,6 +33,10 @@ extern uint8_t ftpSettingsPortValue[6];
 
 extern uint16_t ftpSettingsStatusValuePos;
 extern uint8_t ftpSettingsStatusValue[12];
+extern uint8_t ftpSettingsStateVal;
+extern uint8_t ftpSettingsStateChange;
+extern uint8_t ftpSettingsStatus0[12];
+extern uint8_t ftpSettingsStatus1[12];
 
 extern uint16_t ftpSettingsUserValuePos;
 extern uint8_t ftpSettingsUserValue[16];

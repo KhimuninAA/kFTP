@@ -11,6 +11,8 @@
 #include "ExternParams.h"
 #include "DeclareFunctions.h"
 
+#define _DEBUG
+
 asm{
     org 0x00F0
 }
@@ -22,52 +24,106 @@ asm{
     //Start
     DB 0x00, 0x01
     //Len
-    DB 0x00, 0x0B
+    DB 0x00, 0x1C
     //Reserved
     DB 0x00, 0x00, 0x00, 0x00
 }
 
 void main(){
     updateDiskList();
+    initI2C();
+    ///
     
+    /// WiFI
+    delay5msI2C(); delay5msI2C();
+    getSSIDValue();
+    delay5msI2C(); delay5msI2C();
+    getSSIDPasswordValue();
+    
+    /// FTP
+    delay5msI2C(); delay5msI2C();
+    getFTPUrl();
+    delay5msI2C(); delay5msI2C();
+    getFTPUser();
+    delay5msI2C(); delay5msI2C();
+    getFTPPassword();
+    delay5msI2C(); delay5msI2C();
+    getFTPPort();
+    
+    ///
     updateRootUI();
     
     updateRootDataUI();
     
     //Бесконечный цикл. Что бы увидеть результат
     for (;;) {
-        getKeyboardCodeA();
-        l = a; //Save key
-        if ((a = rootViewOldKey) != l) {
-            a = l; //Load key
-            rootViewOldKey = a;
-            push_pop(hl) {
-                a = l; //Load key
-                if (a != 0xFF) {
-                    /// Hot ley
-                    if (a == 0x03) { //F4 quit ordos
-                        ordos_start();
-                    } else if (a == 0x02) { //F3 Open FTP settings
-                        needOpenFTPSettingsEditView();
-                    } else if (a == 'C') { // Button C
-                        createTestFile();
-                        updateDiskList();
-                        updateRootUI();
-                        showDiskList();
-                    }
-                    
-                    /// View's
-                    if ((a = rootViewCurrentView) == rootViewCurrentDiskView) {
-                        a = l; //Load key
-                        diskViewKeyA();
-                        showDiskList(); //Refresh
-                    } else if ((a = rootViewCurrentView) == rootViewCurrentFTPSettingsEditView) {
-                        a = l; //Load key
-                        ftpSettingsEditViewKeyA();
-                        ftpSettingsEditViewDataUpdate();
-                    }
-                    //printHexA();
+        getKeyboardStateA();
+        if (a == 0xFF) {
+            // Если клавиша нажата - вызываем обработчик
+            keyboardEvent();
+        } else {
+            a = rootTimerTike;
+            if (a >= 240) {
+                a = 0;
+                rootTimerTike = a;
+                if ((a = rootViewCurrentView) == rootViewCurrentDiskView) {
+                    updateWiFiStatus();
+                    updateFtpStatus();
                 }
+            } else {
+                a++;
+                rootTimerTike = a;
+            }
+        }
+    }
+}
+
+void keyboardEvent() {
+    getKeyboardCodeA();
+    l = a; //Save key
+    if ((a = rootViewOldKey) != l) {
+        a = l; //Load key
+        rootViewOldKey = a;
+        push_pop(hl) {
+            a = l; //Load key
+            if (a != 0xFF) {
+                /// Hot ley
+                if (a == 0x03) { //F4 quit ordos
+                    ordos_start();
+                } else if (a == 0x02) { //F3 Open FTP settings
+                    needOpenFTPSettingsEditView();
+                } else if (a == 0x01) { //F2 Open WiFi settings
+                    needOpenWiFiSettingsEditView();
+                } else if (a == 'C') { // Button C
+                    createTestFile();
+                    updateDiskList();
+                    updateRootUI();
+                    showDiskList();
+                }
+                
+                /// View's
+                if ((a = rootViewCurrentView) == rootViewCurrentDiskView) { // Local disk
+                    a = l; //Load key
+                    diskViewKeyA();
+                    showDiskList(); //Refresh
+                } else if ((a = rootViewCurrentView) == rootViewCurrentFTPView) { // FTP Dir
+                    a = l; //Load key
+                    ftpViewKeyA();
+                    ftpViewDataUpdate();
+                } else if ((a = rootViewCurrentView) == rootViewCurrentFTPSettingsEditView) {
+                    a = l; //Load key
+                    ftpSettingsEditViewKeyA();
+                    ftpSettingsEditViewDataUpdate();
+                } else if ((a = rootViewCurrentView) == rootViewCurrentWiFiSettingsEditView) {
+                    a = l; //Load key
+                    wifiSettingsEditViewKeyA();
+                    wifiSettingsEditViewDataUpdate();
+                } else if ((a = rootViewCurrentView) == rootSSIDListView) {
+                    a = l; //Load key
+                    SSIDListViewKeyA();
+                    SSIDListViewDataUpdate();
+                }
+                //printHexA();
             }
         }
     }
@@ -78,11 +134,21 @@ void updateRootDataUI() {
 }
 
 void updateRootUI() {
+    a = 0x00;
+    inverceAddress = a;
     clearScreen();
     
+    a = 0x00;
+    inverceAddress = a;
     showWiFiView();
+    a = 0x00;
+    inverceAddress = a;
     showFtpView();
+    a = 0x00;
+    inverceAddress = a;
     diskView();
+    a = 0x00;
+    inverceAddress = a;
     ftpView();
     
     showHelpStr();
@@ -114,60 +180,6 @@ void diskView() {
     printHLStr();
 }
 
-void showFtpView() {
-    drowRectX = (a = ftpSettingsViewX);
-    drowRectY = (a = ftpSettingsViewY);
-    drowRectEndX = (a = ftpSettingsViewEX);
-    drowRectEndY = (a = ftpSettingsViewEY);
-    drowRect();
-    
-    hl = ftpSettingsLabelPos;
-    setPosCursor();
-    hl = ftpSettingsLabel;
-    printHLStr();
-    
-    hl = ftpSettingsStatusLabelPos;
-    setPosCursor();
-    hl = ftpSettingsStatusLabel;
-    printHLStr();
-    
-    hl = ftpSettingsIpLabelPos;
-    setPosCursor();
-    hl = ftpSettingsIpLabel;
-    printHLStr();
-    
-    hl = ftpSettingsPortLabelPos;
-    setPosCursor();
-    hl = ftpSettingsPortLabel;
-    printHLStr();
-    
-    hl = ftpSettingsUserLabelPos;
-    setPosCursor();
-    hl = ftpSettingsUserLabel;
-    printHLStr();
-    
-    //Value
-    hl = ftpSettingsIpValuePos;
-    setPosCursor();
-    hl = ftpSettingsIpValue;
-    printHLStr();
-    
-    hl = ftpSettingsPortValuePos;
-    setPosCursor();
-    hl = ftpSettingsPortValue;
-    printHLStr();
-    
-    hl = ftpSettingsStatusValuePos;
-    setPosCursor();
-    hl = ftpSettingsStatusValue;
-    printHLStr();
-    
-    hl = ftpSettingsUserValuePos;
-    setPosCursor();
-    hl = ftpSettingsUserValue;
-    printHLStr();
-}
-
 void showWiFiView() {
     drowRectX = (a = wifiSettingsViewX);
     drowRectY = (a = wifiSettingsViewY);
@@ -195,19 +207,35 @@ void showWiFiView() {
     hl = wifiSettingsMacLabel;
     printHLStr();
     
-    hl = wifiSettingsMacValPos;
+    hl = wifiSettingsSsidValPos;
     setPosCursor();
-    hl = wifiSettingsMacVal;
+    hl = wifiSettingsSsidVal;
     printHLStr();
     
+    updateWiFiViewValData();
+}
+
+void clearWiFiViewValData() {
+    hl = wifiSettingsIpValPos;
+    setPosCursor();
+    hl = wifiSettingsEmpty18;
+    printHLStr();
+    
+    hl = wifiSettingsMacValPos;
+    setPosCursor();
+    hl = wifiSettingsEmpty18;
+    printHLStr();
+}
+
+void updateWiFiViewValData() {
     hl = wifiSettingsIpValPos;
     setPosCursor();
     hl = wifiSettingsIpVal;
     printHLStr();
     
-    hl = wifiSettingsSsidValPos;
+    hl = wifiSettingsMacValPos;
     setPosCursor();
-    hl = wifiSettingsSsidVal;
+    hl = wifiSettingsMacVal;
     printHLStr();
 }
 
@@ -279,15 +307,19 @@ void drowRect() {
 }
 
 void setMyFont() {
-    hl = fontAddress;
-    systemFontAddress = hl;
-    hl = &myFont;
-    fontAddress = hl;
+    push_pop(hl) {
+        hl = fontAddress;
+        systemFontAddress = hl;
+        hl = &myFont;
+        fontAddress = hl;
+    }
 }
 
 void setSystemFont() {
-    hl = systemFontAddress;
-    fontAddress = hl;
+    push_pop(hl) {
+        hl = systemFontAddress;
+        fontAddress = hl;
+    }
 }
 
 uint8_t drowRectX = 0x00;
@@ -344,6 +376,8 @@ void showDiskDir() {
         setPosCursor();
         hl = diskViewListDirLabel;
         push_pop(bc) {
+            a = 0;
+            inverceAddress = a;
             if ((a = diskViewCurrPos) == 0) {
                 if ((a = rootViewCurrentView) == rootViewCurrentDiskView) {
                     a = 0xFF;
@@ -370,6 +404,9 @@ void showDiskApp() {
             h++;
         }
         
+        a = 0x00;
+        inverceAddress = a;
+        
         if ((a = diskViewCurrPos)-- == c) {
             if ((a = rootViewCurrentView) == rootViewCurrentDiskView) {
                 a = 0xFF;
@@ -392,7 +429,7 @@ void showDiskApp() {
         a = ' ';
         printChatA();
     };
-    a = 0;
+    a = 0x00;
     inverceAddress = a;
 }
 
@@ -428,6 +465,13 @@ void diskViewKeyA() {
             } else { // Upload file to FTP
                 
             }
+        } else if (a == 0x09) { //TAB
+            a = rootViewCurrentFTPView; // переходим на список файлов FTP
+            rootViewCurrentView = a;
+            // Сбросить выделение строки на диске
+            showDiskList();
+            // Выделить текущую позицию на FTP
+            ftpViewDataUpdate();
         }
     }
 }
@@ -482,7 +526,7 @@ void showFtpSettingsEditView() {
 void needOpenFTPSettingsEditView() {
     push_pop(hl) {
         if ((a = rootViewCurrentView) != rootViewCurrentFTPSettingsEditView) { //Если уже открыты настройки - не открываем
-            if ((a = rootViewCurrentView) != rootViewCurrentFTPSettingsEditView) { //Если открыта настройка WiFi тоже не открываем
+            if ((a = rootViewCurrentView) != rootViewCurrentWiFiSettingsEditView) { //Если открыта настройка WiFi тоже не открываем
                 
                 a = rootViewCurrentFTPSettingsEditView;
                 rootViewCurrentView = a;
@@ -492,49 +536,6 @@ void needOpenFTPSettingsEditView() {
                 showDiskList(); //Сбросить выделение строки
                 showFtpSettingsEditView();
                 ftpSettingsEditViewDataUpdate();
-            }
-        }
-    }
-}
-
-void ftpSettingsEditViewKeyA() {
-    push_pop(hl) {
-        l = a;
-        if ((a = rootViewCurrentView) == rootViewCurrentFTPSettingsEditView) {
-            a = l;
-            if (a == 0x1B) { //ESC выход из настройки
-                a = rootViewCurrentDiskView; // переходим на список файлов на диске
-                rootViewCurrentView = a;
-                
-                updateRootUI();
-                updateRootDataUI();
-            } else {
-                if (a == 0x1A) { //down
-                    a = ftpSettingsEditViewCurrentPos;
-                    a++;
-                    if (a == 5) {
-                        a = 0;
-                    }
-                    ftpSettingsEditViewCurrentPos = a;
-                } else if (a == 0x19) { //up
-                    a = ftpSettingsEditViewCurrentPos;
-                    if (a == 0) {
-                        a = 4;
-                    } else {
-                        a--;
-                    }
-                    ftpSettingsEditViewCurrentPos = a;
-                } else if (a == 0x0D) { //Enter
-                    if ((a = ftpSettingsEditViewCurrentPos) == 4) { // Нажатие на кнопку ОК
-                        a = rootViewCurrentDiskView; // переходим на список файлов на диске
-                        rootViewCurrentView = a;
-                        
-                        updateRootUI();
-                        updateRootDataUI();
-                    } else {
-                        ftpSettingsEditViewSelectEditField();
-                    }
-                }
             }
         }
     }
@@ -580,20 +581,6 @@ void ftpSettingsEditViewSelectEditField() {
         }
     }
     ftpSettingsEditViewEditField();
-}
-
-void ftpSettingsEditViewSaveField() {
-    a = ftpSettingsEditViewCurrentPos;
-    if (a == 0) {
-        hl = ftpSettingsIpValue;
-    } else if (a == 1) {
-        hl = ftpSettingsPortValue;
-    } else if (a == 2) {
-        hl = ftpSettingsUserValue;
-    } else if (a == 3) {
-        hl = ftpSettingsEditViewPasswordVal;
-    }
-    ftpSettingsEditViewSaveEditValueToHL();
 }
 
 void ftpSettingsEditViewSaveEditValueToHL() {
@@ -751,6 +738,9 @@ void ftpSettingsEditViewDataUpdate() {
     push_pop(bc) {
         b = 0;
         do {
+            a = 0x00;
+            inverceAddress = a;
+            
             if ((a = ftpSettingsEditViewCurrentPos) == b) {
                 a = 0xFF;
                 inverceAddress = a;
@@ -770,7 +760,8 @@ void ftpSettingsEditViewDataUpdate() {
 }
 
 #include "FtpSettingsEditView/FtpSettingsEditViewFunctions.h"
-
+#include "wifiSettingsEditView/wifiSettingsEditViewFunctions.h"
+#include "SSIDListView/SSIDListViewFunctions.h"
 #include "Locale.h"
 
-asm(" savebin \"test.ORD\", 0x00f0, 0xBff");
+asm(" savebin \"test.ORD\", 0x00f0, 0x1C0f"); //0xBff

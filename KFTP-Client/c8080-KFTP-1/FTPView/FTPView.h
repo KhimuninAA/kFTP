@@ -16,4 +16,11 @@ uint8_t ftpViewEY = 25;
 uint16_t ftpLabelPos = 0x0728;
 uint8_t ftpLabel[] = " FTP: ";
 
+uint8_t ftpDirList[16 * 24];
+uint8_t ftpDirListNext = 0;
+uint8_t ftpDirListCount = 0;
+uint8_t ftpDirListIsDir = 0;
+
+uint8_t ftpViewCurrentPos = 0;
+
 #endif /* FTPView_h */

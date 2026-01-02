@@ -12,6 +12,7 @@ const int rootViewCurrentDiskView = 0x00;
 const int rootViewCurrentFTPView = 0x01;
 const int rootViewCurrentFTPSettingsEditView = 0x02;
 const int rootViewCurrentWiFiSettingsEditView = 0x03;
+const int rootSSIDListView = 0x04;
 
 extern uint8_t rootViewCurrentView;
 

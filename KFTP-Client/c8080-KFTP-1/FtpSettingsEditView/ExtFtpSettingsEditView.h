@@ -38,4 +38,9 @@ extern uint16_t ftpSettingsEditViewEditValuePos;
 extern uint8_t ftpSettingsEditViewEditValue[24];
 extern uint8_t ftpSettingsEditViewEditPos;
 
+extern uint8_t updateFtpStatusTike;
+
+void updateFtpStatus();
+void updateFtpStatusUI();
+
 #endif /* ExtFtpSettingsEditView_h */

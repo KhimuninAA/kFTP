@@ -23,10 +23,12 @@ extern uint8_t wifiSettingsIpLabel[6];
 extern uint8_t wifiSettingsMacLabel[6];
 
 extern uint16_t wifiSettingsSsidValPos;
-extern uint8_t wifiSettingsSsidVal[20];
+extern uint8_t wifiSettingsSsidVal[16];
 extern uint16_t wifiSettingsIpValPos;
-extern uint8_t wifiSettingsIpVal[20];
+extern uint8_t wifiSettingsIpVal[16];
 extern uint16_t wifiSettingsMacValPos;
-extern uint8_t wifiSettingsMacVal[20];
+extern uint8_t wifiSettingsMacVal[18];
+
+extern uint8_t wifiSettingsEmpty18[18];
 
 #endif /* ExtWifiSettings_h */

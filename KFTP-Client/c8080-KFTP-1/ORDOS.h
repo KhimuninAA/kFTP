@@ -28,4 +28,6 @@ void ordos_mxdsk() __address(0xbfb8);
 void ordos_rmax() __address(0xbfc1);
 /// запись байта в диск HL-addr A-byte
 void ordos_wdisk() __address(0xbfdf);
+/// чтение байта из диска HL-addr A-byte
+void ordos_rdisk() __address(0xbfdc);
 

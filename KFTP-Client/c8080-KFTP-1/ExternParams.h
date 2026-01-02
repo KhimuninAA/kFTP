@@ -9,7 +9,8 @@
 #define ExternParams_h
 
 extern uint16_t systemFontAddress;
-extern uint8_t myFont[56];
+extern uint8_t myFont[72]; // 56
+extern uint8_t rootTimerTike;
 
 #include "wifiSettings/ExtWifiSettings.h"
 #include "FtpSettings/ExtFtpSettings.h"
@@ -18,6 +19,14 @@ extern uint8_t myFont[56];
 #include "FTPView/ExtFTPView.h"
 #include "RootViewValue/ExtRootViewValue.h"
 #include "FtpSettingsEditView/ExtFtpSettingsEditView.h"
+#include "wifiSettingsEditView/wifiSettingsEditViewInclude.h"
+#include "SSIDListView/SSIDListViewInclude.h"
+#include "I2C/I2CInclude.h"
+#include "ESP/ESPInclude.h"
+#include "NET/NETInclude.h"
+#include "FTPView/FTPViewInclude.h"
+#include "FtpSettings/FtpSettingsInclude.h"
+#include "FtpFileLoadView/FtpFileLoadViewInclude.h"
 
 #endif /* ExternParams_h */
 

@@ -17,5 +17,16 @@
 #include "RootViewValue/RootViewValue.h"
 #include "FtpSettingsEditView/FtpSettingsEditView.h"
 #include "DiskView/DiskFunctions.h"
+#include "wifiSettingsEditView/wifiSettingsEditView.h"
+#include "SSIDListView/SSIDListView.h"
+
+#include "I2C/I2CFunctions.h"
+#include "ESP/ESPFunctions.h"
+#include "NET/NETFunctions.h"
+#include "FTPView/FTPViewFunctions.h"
+#include "FtpSettings/FtpSettingsFunctions.h"
+#include "FtpFileLoadView/FtpFileLoadViewFunctions.h"
+
+uint8_t rootTimerTike = 0;
 
 #endif /* Locale_h */

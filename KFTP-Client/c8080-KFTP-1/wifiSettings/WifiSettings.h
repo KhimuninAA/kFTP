@@ -23,10 +23,12 @@ uint16_t wifiSettingsIpLabelPos = 0x0302;
 uint16_t wifiSettingsMacLabelPos = 0x0402;
 
 uint16_t wifiSettingsSsidValPos = 0x0208;
-uint8_t wifiSettingsSsidVal[20] = "K159";
+uint8_t wifiSettingsSsidVal[16] = "K159";
 uint16_t wifiSettingsIpValPos = 0x0308;
-uint8_t wifiSettingsIpVal[20] = "192.168.1.127";
+uint8_t wifiSettingsIpVal[16] = "-";
 uint16_t wifiSettingsMacValPos = 0x0408;
-uint8_t wifiSettingsMacVal[20] = "10:98:C3:DC:88:06";
+uint8_t wifiSettingsMacVal[18] = "-";
+
+uint8_t wifiSettingsEmpty18[18] = "                 ";
 
 #endif /* WifiSettings_h */
