@@ -20,5 +20,6 @@ void parceBufferToFile();
 /// DE - 2 byte size
 void parceSizeFileInBuffer();
 void ftpViewCurrentPosIsDir();
+void loadSelectFile();
 
 #endif /* FTPViewInclude_h */

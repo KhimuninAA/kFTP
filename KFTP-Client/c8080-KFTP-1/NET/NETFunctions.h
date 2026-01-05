@@ -620,6 +620,10 @@ void updateFtpList() {
         l = 25;
         h = 0;
         sendCommand();
+        
+        delay5msI2C();
+        i2cWaitingForAccess();
+        busRecoveryI2C();
     }
 }
 
@@ -656,8 +660,12 @@ void getFtpList() {
                     }
                 }
             }
-            a = ftpDirListNext;
-        } while (a == 1);
+            //a = ftpDirListNext;
+        } while ((a = ftpDirListNext) != 0x5A); // == 1
+        
+        delay5msI2C();
+        i2cWaitingForAccess();
+        busRecoveryI2C();
     }
 }
 
@@ -709,7 +717,47 @@ void ftpFileDownloadNext() {
             // Распарсить буфер и пррверить контрольную сумму
             ftpFileLoadViewParce();
             
-        } while ((a = ftpFileLoadViewIsNextData) == 1);
+        } while ((a = ftpFileLoadViewIsNextData) != 0x5A); // == 1
+    }
+}
+
+/// Сменить директорию
+void ftpChangeDirPos() {
+    push_pop(de) {
+        push_pop(hl) {
+            de = ESP_I2S_BUFFER;
+            a = ftpViewCurrentPos;
+            *de = a;
+            //
+            delay5msI2C();
+            i2cWaitingForAccess();
+            //
+            l = 32; // FTP_DIR_INDEX
+            h = 1; // 1 байт
+            sendCommand();
+            
+            delay5msI2C();
+            i2cWaitingForAccess();
+            busRecoveryI2C();
+        }
+    }
+}
+
+/// Сменить директорию вверх
+void ftpChangeDirUp() {
+    push_pop(de) {
+        push_pop(hl) {
+            delay5msI2C();
+            i2cWaitingForAccess();
+            //
+            l = 31; // FTP_DIR_UP
+            h = 0;
+            sendCommand();
+            
+            delay5msI2C();
+            i2cWaitingForAccess();
+            busRecoveryI2C();
+        }
     }
 }
 

@@ -8,7 +8,7 @@
 #ifndef I2CFunctions_h
 #define I2CFunctions_h
 
-#define NOPS nop(); nop(); nop(); nop(); nop();
+#define NOPS nop(); nop(); nop(); nop(); //nop();
 //nop(); //nop(); nop(); nop(); //nop(); nop();
 //nop(); nop(); nop(); nop(); nop(); nop(); nop(); nop(); nop(); nop();
 #define _SLOW_SETTINGS
@@ -68,6 +68,13 @@ void pulseNewI2C() {
     a = I2C_CURRETN_VALUE;
     a += 0x40;
     VV55_PORT_C = a;
+//    /// - Проверим что SLAVE не тормозит передачу -
+//    /// - После установки 1 - проверяем - есть ли 1 на SCL. Если там 0 - то ждем SLAVE
+//    do {
+//        a = VV55_PORT_C;
+//        a &= 0x40;
+//    } while (a != 0x40);
+//    /// -------------------------------------
     #ifdef _SLOW_SETTINGS
     NOPS
     #endif
@@ -104,10 +111,10 @@ void transmitNewI2C() {
 /// вых.[C] принятый байт
 /// вых.[B] ACK/NAK
 void recieveNewI2C() {
-    //push_pop(bc) {
+    push_pop(de) {
         setSDAI2C(a = 0x80);
-        
-        bc = 0x0800;
+        c = 0;
+        d = 0x08;
         do {
             a = c;
             carry_rotate_left(a, 1);
@@ -117,15 +124,27 @@ void recieveNewI2C() {
             a += c;
             c = a;
             pulseNewI2C();
-            b--;
-            a = b;
+            d--;
+            a = d;
         } while (flag_nz);
-        setSDAI2C(a = 0x80);
+//        setSDAI2C(a = 0x80);
+//        a &= 1;
+//        b = a;
+//        setSDAI2C(a = 0x00);
+//        if ((a = b) == 0x01) {
+//            setSDAI2C(a = 0x80);
+//        } else {
+//            setSDAI2C(a = 0x00);
+//        }
+        
+        setSDAI2C(a = 0x00);
+        
+        pulseNewI2C();
+        
+        a = VV55_PORT_C;
         a &= 1;
         b = a;
-        setSDAI2C(a = 0x00);
-        pulseNewI2C();
-    //}
+    }
 }
 
 /// вых.[B] - 1 устройство занято

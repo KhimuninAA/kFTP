@@ -65,14 +65,22 @@ void readNewInBuffer() {
             de = ESP_I2S_BUFFER;
             do {
                 push_pop(bc) {
+                    // Если последний ожидаемый байт - то передаем NACK
+                    if ((a = l) == 1) {
+                        b = 0x01;
+                    } else {
+                        b = 0x00;
+                    }
                     recieveNewI2C();
+//                    if ((a = b) == 0x01) {
+//                        l = 1;
+//                    }
                     a = c;
                 }
                 *de = a;
                 de++;
                 l--;
-                a = l;
-            } while (a > 0);
+            } while ((a = l) > 0);
             a = 0; // stop byte
             *de = a;
             //

@@ -46,7 +46,7 @@ void updateProgress() {
                 push_pop(hl) {
                     printChatC();
                 }
-            } while ((a = h) < 30);
+            } while ((a = h) < 40);
             setSystemFont();
         }
     }
@@ -81,7 +81,7 @@ void ftpFileLoadViewParce() {
                 de++;
                 //stopByte
                 a = *de;
-                a &= 0x01;
+                //a &= 0x01;
                 ftpFileLoadViewIsNextData = a;
                 de++;
                 //sum
@@ -153,9 +153,9 @@ uint8_t ftpFileLoadViewCheckSum = 0;
 uint8_t ftpFileLoadViewCheckSumState = 0;
 uint8_t ftpFileLoadViewProgress = 0;
 
-uint8_t FtpFileLoadViewX = 15;
+uint8_t FtpFileLoadViewX = 10;
 uint8_t FtpFileLoadViewY = 11;
-uint8_t FtpFileLoadViewEX = 49;
+uint8_t FtpFileLoadViewEX = 54;
 uint8_t FtpFileLoadViewEY = 14;
 
 uint16_t FtpFileLoadViewTitlelPos = 0x0B1D; //031B

@@ -60,5 +60,10 @@ void getFtpList();
 void ftpFileDownload();
 /// Скачать указанный файл
 void ftpFileDownloadNext();
+
+/// Сменить директорию
+void ftpChangeDirPos();
+/// Сменить директорию вверх
+void ftpChangeDirUp();
     
 #endif /* NETInclude_h */

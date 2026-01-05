@@ -38,7 +38,7 @@ void clearView() {
                 printHLStr();
                 b--;
                 c++;
-            } while (flag_nz);
+            } while ((a = b) > 0);
         }
     }
 }
@@ -64,10 +64,9 @@ void ftpViewDataUpdate() {
             inverceAddress = a;
             
             b++;
-            //a = ftpDirListCount;
-            //a++;
-            a = b;
-        } while (a < 14);
+            a = ftpDirListCount;
+            c = a;
+        } while ((a = b) < c);
     }
 }
 
@@ -139,26 +138,35 @@ void ftpViewKeyA() {
                     ftpViewCurrentPosIsDir();
                     if ((a = ftpDirListIsDir) == 1) {
                         if ((a = ftpViewCurrentPos) == 0) {
-                            // DirUp
+                            ftpChangeDirUp();
                         } else {
-                            // Dir enter
+                            ftpChangeDirPos();
                         }
+                        clearView();
+                        needUpdateFtpList();
                     } else {
-                        showFtpFileLoadView();
-                        ftpFileLoadViewNeedLoad();
+                        loadSelectFile();
                     }
                 } else if (a == 0x34) { // C (COPY)
                     ftpViewCurrentPosIsDir();
                     if ((a = ftpDirListIsDir) == 0) {
-                        showFtpFileLoadView();
-                        ftpFileLoadViewNeedLoad();
+                        loadSelectFile();
                     }
                 } else if (a == 'R') { // R (Refresh)
+                    clearView();
                     needUpdateFtpList();
                 }
             }
         }
     }
+}
+
+void loadSelectFile() {
+    showFtpFileLoadView();
+    ftpFileLoadViewNeedLoad();
+    updateDiskList();
+    updateRootUI();
+    showDiskList();
 }
 
 /// from ESP_I2S_BUFFER
@@ -169,13 +177,13 @@ void parceBufferToFile() {
     de = ESP_I2S_BUFFER;
     // (0) - порядковый номер Должен быть == ftpDirListCount + 1
     a = ftpDirListCount;
-    b = a;
-    a = *de;
-    if (a != b) {
-        a = 0;
-        ftpDirListNext = a;
-        return;
-    }
+//    b = a;
+//    a = *de;
+//    if (a != b) {
+//        a = 0x5A;
+//        ftpDirListNext = a;
+//        return;
+//    }
     hl = ftpDirList;
     b = 0;
     carry_rotate_left(a, 4);
@@ -184,20 +192,26 @@ void parceBufferToFile() {
     }
     c = a;
     hl += bc; // ftpDirList + смещение
-    a = ftpDirListCount;
-    a ++;
-    ftpDirListCount = a;
+//    a = ftpDirListCount;
+//    a ++;
+//    ftpDirListCount = a;
     // (1) - Флаг окончания пакета. Если 1 - то продолжаем. Любой другой - СТОП!
     de++;
     a = *de;
-    if (a == 0x01) {
-        a = 1;
-        ftpDirListNext = a;
-    } else {
-        a = 0;
-        ftpDirListNext = a;
-        return;
+    ftpDirListNext = a;
+    if (a != 0x5A) {
+        a = ftpDirListCount;
+        a ++;
+        ftpDirListCount = a;
     }
+//    if (a == 0x01) {
+//        a = 1;
+//        ftpDirListNext = a;
+//    } else {
+//        a = 0;
+//        ftpDirListNext = a;
+//        return;
+//    }
     // (2) - Флаг директоии
     de++;
     a = *de;

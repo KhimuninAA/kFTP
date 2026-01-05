@@ -4171,7 +4171,6 @@ initi2c:
 	nop
 	nop
 	nop
-	nop
 ; 21     #endif
 ; 22     a = 0xC0;
 	ld a, 192
@@ -4188,7 +4187,6 @@ starti2c:
 	nop
 	nop
 	nop
-	nop
 ; 29     #endif
 ; 30     a = 0x40;
 	ld a, 64
@@ -4196,7 +4194,6 @@ starti2c:
 	ld (vv55_port_c), a
 ; 32     #ifdef _SLOW_SETTINGS
 ; 33     NOPS
-	nop
 	nop
 	nop
 	nop
@@ -4219,7 +4216,6 @@ stopi2c:
 	nop
 	nop
 	nop
-	nop
 ; 43     #endif
 ; 44     a = 0x40;
 	ld a, 64
@@ -4227,7 +4223,6 @@ stopi2c:
 	ld (vv55_port_c), a
 ; 46     #ifdef _SLOW_SETTINGS
 ; 47     NOPS
-	nop
 	nop
 	nop
 	nop
@@ -4265,7 +4260,6 @@ pulsenewi2c:
 	nop
 	nop
 	nop
-	nop
 ; 67     #endif
 ; 68     a = I2C_CURRETN_VALUE;
 	ld a, (i2c_curretn_value)
@@ -4273,213 +4267,234 @@ pulsenewi2c:
 	add 64
 ; 70     VV55_PORT_C = a;
 	ld (vv55_port_c), a
-; 71     #ifdef _SLOW_SETTINGS
-; 72     NOPS
+; 71 //    /// - Проверим что SLAVE не тормозит передачу -
+; 72 //    /// - После установки 1 - проверяем - есть ли 1 на SCL. Если там 0 - то ждем SLAVE
+; 73 //    do {
+; 74 //        a = VV55_PORT_C;
+; 75 //        a &= 0x40;
+; 76 //    } while (a != 0x40);
+; 77 //    /// -------------------------------------
+; 78     #ifdef _SLOW_SETTINGS
+; 79     NOPS
 	nop
 	nop
 	nop
 	nop
+; 80     #endif
+; 81     nop();
 	nop
-; 73     #endif
-; 74     nop();
-	nop
-; 75     a = I2C_CURRETN_VALUE;
+; 82     a = I2C_CURRETN_VALUE;
 	ld a, (i2c_curretn_value)
-; 76     a += 0x00;
-; 77     VV55_PORT_C = a;
+; 83     a += 0x00;
+; 84     VV55_PORT_C = a;
 	ld (vv55_port_c), a
 	ret
-; 78 }
-; 79 
-; 80 /// вх. [C] передаваемый байт
-; 81 /// вых.[A]=0 - OK
-; 82 void transmitNewI2C() {
+; 85 }
+; 86 
+; 87 /// вх. [C] передаваемый байт
+; 88 /// вых.[A]=0 - OK
+; 89 void transmitNewI2C() {
 transmitnewi2c:
-; 83     push_pop(bc) {
+; 90     push_pop(bc) {
 	push bc
-; 84         b = 8;
+; 91         b = 8;
 	ld b, 8
-; 85         do {
+; 92         do {
 l_300:
-; 86             setSDAI2C(a = c);
+; 93             setSDAI2C(a = c);
 	ld a, c
 	call setsdai2c
-; 87             pulseNewI2C();
+; 94             pulseNewI2C();
 	call pulsenewi2c
-; 88             a = c;
+; 95             a = c;
 	ld a, c
-; 89             carry_rotate_left(a, 1);
+; 96             carry_rotate_left(a, 1);
 	rla
-; 90             c = a;
+; 97             c = a;
 	ld c, a
-; 91             b--;
+; 98             b--;
 	dec b
 l_301:
 	jp nz, l_300
-; 92         } while (flag_nz);
-; 93         
-; 94         setSDAI2C(a = 0x80);
+; 99         } while (flag_nz);
+; 100         
+; 101         setSDAI2C(a = 0x80);
 	ld a, 128
 	call setsdai2c
-; 95         a = VV55_PORT_C;
+; 102         a = VV55_PORT_C;
 	ld a, (vv55_port_c)
-; 96         a &= 1;
+; 103         a &= 1;
 	and 1
-; 97         b = a;
+; 104         b = a;
 	ld b, a
-; 98         setSDAI2C(a = 0x00);
+; 105         setSDAI2C(a = 0x00);
 	ld a, 0
 	call setsdai2c
-; 99         pulseNewI2C();
+; 106         pulseNewI2C();
 	call pulsenewi2c
-; 100         a = b;
+; 107         a = b;
 	ld a, b
 	pop bc
 	ret
-; 101     }
-; 102 }
-; 103 
-; 104 /// вых.[C] принятый байт
-; 105 /// вых.[B] ACK/NAK
-; 106 void recieveNewI2C() {
+; 108     }
+; 109 }
+; 110 
+; 111 /// вых.[C] принятый байт
+; 112 /// вых.[B] ACK/NAK
+; 113 void recieveNewI2C() {
 recievenewi2c:
-; 107     //push_pop(bc) {
-; 108         setSDAI2C(a = 0x80);
+; 114     push_pop(de) {
+	push de
+; 115         setSDAI2C(a = 0x80);
 	ld a, 128
 	call setsdai2c
-; 109         
-; 110         bc = 0x0800;
-	ld bc, 2048
-; 111         do {
+; 116         c = 0;
+	ld c, 0
+; 117         d = 0x08;
+	ld d, 8
+; 118         do {
 l_303:
-; 112             a = c;
+; 119             a = c;
 	ld a, c
-; 113             carry_rotate_left(a, 1);
+; 120             carry_rotate_left(a, 1);
 	rla
-; 114             c = a;
+; 121             c = a;
 	ld c, a
-; 115             a = VV55_PORT_C; // READ BIT
+; 122             a = VV55_PORT_C; // READ BIT
 	ld a, (vv55_port_c)
-; 116             a &= 1;
+; 123             a &= 1;
 	and 1
-; 117             a += c;
+; 124             a += c;
 	add c
-; 118             c = a;
+; 125             c = a;
 	ld c, a
-; 119             pulseNewI2C();
+; 126             pulseNewI2C();
 	call pulsenewi2c
-; 120             b--;
-	dec b
-; 121             a = b;
-	ld a, b
+; 127             d--;
+	dec d
+; 128             a = d;
+	ld a, d
 l_304:
 	jp nz, l_303
-; 122         } while (flag_nz);
-; 123         setSDAI2C(a = 0x80);
-	ld a, 128
-	call setsdai2c
-; 124         a &= 1;
-	and 1
-; 125         b = a;
-	ld b, a
-; 126         setSDAI2C(a = 0x00);
+; 129         } while (flag_nz);
+; 130 //        setSDAI2C(a = 0x80);
+; 131 //        a &= 1;
+; 132 //        b = a;
+; 133 //        setSDAI2C(a = 0x00);
+; 134 //        if ((a = b) == 0x01) {
+; 135 //            setSDAI2C(a = 0x80);
+; 136 //        } else {
+; 137 //            setSDAI2C(a = 0x00);
+; 138 //        }
+; 139         
+; 140         setSDAI2C(a = 0x00);
 	ld a, 0
 	call setsdai2c
-; 127         pulseNewI2C();
-	jp pulsenewi2c
-; 128     //}
-; 129 }
-; 130 
-; 131 /// вых.[B] - 1 устройство занято
-; 132 void i2cBusy() {
-i2cbusy:
-; 133     a = VV55_PORT_C;
+; 141         
+; 142         pulseNewI2C();
+	call pulsenewi2c
+; 143         
+; 144         a = VV55_PORT_C;
 	ld a, (vv55_port_c)
-; 134     a &= 2;
+; 145         a &= 1;
+	and 1
+; 146         b = a;
+	ld b, a
+	pop de
+	ret
+; 147     }
+; 148 }
+; 149 
+; 150 /// вых.[B] - 1 устройство занято
+; 151 void i2cBusy() {
+i2cbusy:
+; 152     a = VV55_PORT_C;
+	ld a, (vv55_port_c)
+; 153     a &= 2;
 	and 2
-; 135     carry_rotate_right(a, 1);
+; 154     carry_rotate_right(a, 1);
 	rra
 	ret
-; 136 }
-; 137 
-; 138 /// Ожидание готовности I2C
-; 139 void i2cWaitingForAccess() {
+; 155 }
+; 156 
+; 157 /// Ожидание готовности I2C
+; 158 void i2cWaitingForAccess() {
 i2cwaitingforaccess:
-; 140     do {
+; 159     do {
 l_306:
-; 141         i2cBusy();
+; 160         i2cBusy();
 	call i2cbusy
-; 142         if (a == 1) {
+; 161         if (a == 1) {
 	cp 1
 	jp nz, l_309
-; 143             nop();
+; 162             nop();
 	nop
-; 144             nop();
+; 163             nop();
 	nop
-; 145             nop();
+; 164             nop();
 	nop
-; 146             nop();
+; 165             nop();
 	nop
-; 147             nop();
+; 166             nop();
 	nop
 l_309:
 l_307:
-; 148         }
-; 149     } while (a == 1);
+; 167         }
+; 168     } while (a == 1);
 	cp 1
 	jp z, l_306
 	ret
-; 150 }
-; 151 
-; 152 void delay5msI2C() {
+; 169 }
+; 170 
+; 171 void delay5msI2C() {
 delay5msi2c:
-; 153     push_pop(bc) {
+; 172     push_pop(bc) {
 	push bc
-; 154         bc = 0x500;
+; 173         bc = 0x500;
 	ld bc, 1280
-; 155         do {
+; 174         do {
 l_311:
-; 156             bc--;
+; 175             bc--;
 	dec bc
-; 157             a = b;
+; 176             a = b;
 	ld a, b
-; 158             a |= c;
+; 177             a |= c;
 	or c
 l_312:
 	jp nz, l_311
 	pop bc
 	ret
-; 159         } while (flag_nz);
-; 160     }
-; 161 }
-; 162 
-; 163 void busRecoveryI2C() {
+; 178         } while (flag_nz);
+; 179     }
+; 180 }
+; 181 
+; 182 void busRecoveryI2C() {
 busrecoveryi2c:
-; 164     startI2C();
+; 183     startI2C();
 	call starti2c
-; 165     a = 0;
+; 184     a = 0;
 	ld a, 0
-; 166     setSDAI2C();
+; 185     setSDAI2C();
 	call setsdai2c
-; 167     pulseNewI2C();
+; 186     pulseNewI2C();
 	call pulsenewi2c
-; 168     pulseNewI2C();
+; 187     pulseNewI2C();
 	call pulsenewi2c
-; 169     pulseNewI2C();
+; 188     pulseNewI2C();
 	call pulsenewi2c
-; 170     pulseNewI2C();
+; 189     pulseNewI2C();
 	call pulsenewi2c
-; 171     pulseNewI2C();
+; 190     pulseNewI2C();
 	call pulsenewi2c
-; 172     pulseNewI2C();
+; 191     pulseNewI2C();
 	call pulsenewi2c
-; 173     pulseNewI2C();
+; 192     pulseNewI2C();
 	call pulsenewi2c
-; 174     pulseNewI2C();
+; 193     pulseNewI2C();
 	call pulsenewi2c
-; 175     pulseNewI2C();
+; 194     pulseNewI2C();
 	call pulsenewi2c
-; 176     stopI2C();
+; 195     stopI2C();
 	jp stopi2c
 ; 11 uint8_t I2C_CURRETN_VALUE = 0x00;
 i2c_curretn_value:
@@ -4585,39 +4600,55 @@ readnewinbuffer:
 l_319:
 ; 67                 push_pop(bc) {
 	push bc
-; 68                     recieveNewI2C();
+; 68                     // Если последний ожидаемый байт - то передаем NACK
+; 69                     if ((a = l) == 1) {
+	ld a, l
+	cp 1
+	jp nz, l_322
+; 70                         b = 0x01;
+	ld b, 1
+	jp l_323
+l_322:
+; 71                     } else {
+; 72                         b = 0x00;
+	ld b, 0
+l_323:
+; 73                     }
+; 74                     recieveNewI2C();
 	call recievenewi2c
-; 69                     a = c;
+; 75 //                    if ((a = b) == 0x01) {
+; 76 //                        l = 1;
+; 77 //                    }
+; 78                     a = c;
 	ld a, c
 	pop bc
-; 70                 }
-; 71                 *de = a;
+; 79                 }
+; 80                 *de = a;
 	ld (de), a
-; 72                 de++;
+; 81                 de++;
 	inc de
-; 73                 l--;
+; 82                 l--;
 	dec l
-; 74                 a = l;
-	ld a, l
 l_320:
-; 75             } while (a > 0);
+; 83             } while ((a = l) > 0);
+	ld a, l
 	or a
 	jp nz, l_319
-; 76             a = 0; // stop byte
+; 84             a = 0; // stop byte
 	ld a, 0
-; 77             *de = a;
+; 85             *de = a;
 	ld (de), a
-; 78             //
-; 79             stopI2C();
+; 86             //
+; 87             stopI2C();
 	call stopi2c
 	pop de
 	pop hl
 	ret
-; 80         }
-; 81     }
-; 82 }
-; 83 
-; 84 uint8_t ESP_I2S_BUFFER[32];
+; 88         }
+; 89     }
+; 90 }
+; 91 
+; 92 uint8_t ESP_I2S_BUFFER[32];
 esp_i2s_buffer:
 	ds 32
 ; 12 void getSSIDList() {
@@ -4628,7 +4659,7 @@ getssidlist:
 ; 16     push_pop(bc) {
 	push bc
 ; 17         do {
-l_322:
+l_324:
 ; 18             //
 ; 19             delay5msI2C();
 	call delay5msi2c
@@ -4686,7 +4717,7 @@ l_322:
 ; 46                         b = 16;
 	ld b, 16
 ; 47                         do {
-l_325:
+l_327:
 ; 48                             a = *de;
 	ld a, (de)
 ; 49                             *hl = a;
@@ -4697,8 +4728,8 @@ l_325:
 	inc hl
 ; 52                             b--;
 	dec b
-l_326:
-	jp nz, l_325
+l_328:
+	jp nz, l_327
 	pop hl
 	pop de
 	pop af
@@ -4708,10 +4739,10 @@ l_326:
 ; 56             }
 ; 57             a = SSIDListNext;
 	ld a, (ssidlistnext)
-l_323:
+l_325:
 ; 58         } while (a != 0);
 	or a
-	jp nz, l_322
+	jp nz, l_324
 	pop bc
 	ret
 ; 59     }
@@ -4754,7 +4785,7 @@ getssidvalue:
 ; 81                 b = 16;
 	ld b, 16
 ; 82                 do {
-l_328:
+l_330:
 ; 83                     a = *de;
 	ld a, (de)
 ; 84                     *hl = a;
@@ -4765,8 +4796,8 @@ l_328:
 	inc hl
 ; 87                     b--;
 	dec b
-l_329:
-	jp nz, l_328
+l_331:
+	jp nz, l_330
 	pop bc
 	pop de
 	pop hl
@@ -4814,15 +4845,15 @@ getssidpasswordvalue:
 ; 113                 b = 16;
 	ld b, 16
 ; 114                 do {
-l_331:
+l_333:
 ; 115                     a = *de;
 	ld a, (de)
 ; 116                     if(a==0xFF){
 	cp 255
-	jp nz, l_334
+	jp nz, l_336
 ; 117                         a = 0x00;
 	ld a, 0
-l_334:
+l_336:
 ; 118                     }
 ; 119                     *hl = a;
 	ld (hl), a
@@ -4832,8 +4863,8 @@ l_334:
 	inc hl
 ; 122                     b--;
 	dec b
-l_332:
-	jp nz, l_331
+l_334:
+	jp nz, l_333
 	pop bc
 	pop de
 	pop hl
@@ -4862,27 +4893,27 @@ setssidpasswordvalue:
 ; 137                 c = 0;
 	ld c, 0
 ; 138                 do {
-l_336:
+l_338:
 ; 139                     a = *de;
 	ld a, (de)
 ; 140                     if ((a = c) == 1) {
 	ld a, c
 	cp 1
-	jp nz, l_339
+	jp nz, l_341
 ; 141                         a = 0xFF;
 	ld a, 255
-	jp l_340
-l_339:
+	jp l_342
+l_341:
 ; 142                     } else if((a = *de) == 0) {
 	ld a, (de)
 	or a
-	jp nz, l_341
+	jp nz, l_343
 ; 143                         c = 1;
 	ld c, 1
 ; 144                         a = 0x00;
 	ld a, 0
-l_341:
-l_340:
+l_343:
+l_342:
 ; 145                     }
 ; 146                     *hl = a;
 	ld (hl), a
@@ -4892,8 +4923,8 @@ l_340:
 	inc hl
 ; 149                     b--;
 	dec b
-l_337:
-	jp nz, l_336
+l_339:
+	jp nz, l_338
 ; 150                 } while (flag_nz);
 ; 151                 
 ; 152                 delay5msI2C();
@@ -5022,15 +5053,15 @@ getssidipaddress:
 ; 220                 b = 16;
 	ld b, 16
 ; 221                 do {
-l_343:
+l_345:
 ; 222                     a = *de;
 	ld a, (de)
 ; 223                     if(a==0xFF){
 	cp 255
-	jp nz, l_346
+	jp nz, l_348
 ; 224                         a = 0x00;
 	ld a, 0
-l_346:
+l_348:
 ; 225                     }
 ; 226                     *hl = a;
 	ld (hl), a
@@ -5040,8 +5071,8 @@ l_346:
 	inc hl
 ; 229                     b--;
 	dec b
-l_344:
-	jp nz, l_343
+l_346:
+	jp nz, l_345
 	pop bc
 	pop de
 	pop hl
@@ -5088,15 +5119,15 @@ getssidmacaddress:
 ; 254                 b = 18;
 	ld b, 18
 ; 255                 do {
-l_348:
+l_350:
 ; 256                     a = *de;
 	ld a, (de)
 ; 257                     if(a==0xFF){
 	cp 255
-	jp nz, l_351
+	jp nz, l_353
 ; 258                         a = 0x00;
 	ld a, 0
-l_351:
+l_353:
 ; 259                     }
 ; 260                     *hl = a;
 	ld (hl), a
@@ -5106,8 +5137,8 @@ l_351:
 	inc hl
 ; 263                     b--;
 	dec b
-l_349:
-	jp nz, l_348
+l_351:
+	jp nz, l_350
 	pop bc
 	pop de
 	pop hl
@@ -5161,12 +5192,12 @@ getssidstate:
 	ld (wifistate), a
 ; 292                 if(a != h){
 	cp h
-	jp z, l_353
+	jp z, l_355
 ; 293                     a = 0x01;
 	ld a, 1
 ; 294                     WiFiStateUpdate = a;
 	ld (wifistateupdate), a
-l_353:
+l_355:
 	pop bc
 	pop de
 	pop hl
@@ -5215,15 +5246,15 @@ getftpurl:
 ; 321                 b = 16;
 	ld b, 16
 ; 322                 do {
-l_355:
+l_357:
 ; 323                     a = *de;
 	ld a, (de)
 ; 324                     if(a==0xFF){
 	cp 255
-	jp nz, l_358
+	jp nz, l_360
 ; 325                         a = 0x00;
 	ld a, 0
-l_358:
+l_360:
 ; 326                     }
 ; 327                     *hl = a;
 	ld (hl), a
@@ -5233,8 +5264,8 @@ l_358:
 	inc hl
 ; 330                     b--;
 	dec b
-l_356:
-	jp nz, l_355
+l_358:
+	jp nz, l_357
 	pop bc
 	pop de
 	pop hl
@@ -5263,27 +5294,27 @@ setftpurl:
 ; 345                 c = 0;
 	ld c, 0
 ; 346                 do {
-l_360:
+l_362:
 ; 347                     a = *de;
 	ld a, (de)
 ; 348                     if ((a = c) == 1) {
 	ld a, c
 	cp 1
-	jp nz, l_363
+	jp nz, l_365
 ; 349                         a = 0xFF;
 	ld a, 255
-	jp l_364
-l_363:
+	jp l_366
+l_365:
 ; 350                     } else if((a = *de) == 0) {
 	ld a, (de)
 	or a
-	jp nz, l_365
+	jp nz, l_367
 ; 351                         c = 1;
 	ld c, 1
 ; 352                         a = 0x00;
 	ld a, 0
-l_365:
-l_364:
+l_367:
+l_366:
 ; 353                     }
 ; 354                     *hl = a;
 	ld (hl), a
@@ -5293,8 +5324,8 @@ l_364:
 	inc hl
 ; 357                     b--;
 	dec b
-l_361:
-	jp nz, l_360
+l_363:
+	jp nz, l_362
 ; 358                 } while (flag_nz);
 ; 359                 
 ; 360                 delay5msI2C();
@@ -5352,15 +5383,15 @@ getftpuser:
 ; 388                 b = 16;
 	ld b, 16
 ; 389                 do {
-l_367:
+l_369:
 ; 390                     a = *de;
 	ld a, (de)
 ; 391                     if(a==0xFF){
 	cp 255
-	jp nz, l_370
+	jp nz, l_372
 ; 392                         a = 0x00;
 	ld a, 0
-l_370:
+l_372:
 ; 393                     }
 ; 394                     *hl = a;
 	ld (hl), a
@@ -5370,8 +5401,8 @@ l_370:
 	inc hl
 ; 397                     b--;
 	dec b
-l_368:
-	jp nz, l_367
+l_370:
+	jp nz, l_369
 	pop bc
 	pop de
 	pop hl
@@ -5400,27 +5431,27 @@ setftpuser:
 ; 412                 c = 0;
 	ld c, 0
 ; 413                 do {
-l_372:
+l_374:
 ; 414                     a = *de;
 	ld a, (de)
 ; 415                     if ((a = c) == 1) {
 	ld a, c
 	cp 1
-	jp nz, l_375
+	jp nz, l_377
 ; 416                         a = 0xFF;
 	ld a, 255
-	jp l_376
-l_375:
+	jp l_378
+l_377:
 ; 417                     } else if((a = *de) == 0) {
 	ld a, (de)
 	or a
-	jp nz, l_377
+	jp nz, l_379
 ; 418                         c = 1;
 	ld c, 1
 ; 419                         a = 0x00;
 	ld a, 0
-l_377:
-l_376:
+l_379:
+l_378:
 ; 420                     }
 ; 421                     *hl = a;
 	ld (hl), a
@@ -5430,8 +5461,8 @@ l_376:
 	inc hl
 ; 424                     b--;
 	dec b
-l_373:
-	jp nz, l_372
+l_375:
+	jp nz, l_374
 ; 425                 } while (flag_nz);
 ; 426                 
 ; 427                 delay5msI2C();
@@ -5489,15 +5520,15 @@ getftppassword:
 ; 455                 b = 16;
 	ld b, 16
 ; 456                 do {
-l_379:
+l_381:
 ; 457                     a = *de;
 	ld a, (de)
 ; 458                     if(a==0xFF){
 	cp 255
-	jp nz, l_382
+	jp nz, l_384
 ; 459                         a = 0x00;
 	ld a, 0
-l_382:
+l_384:
 ; 460                     }
 ; 461                     *hl = a;
 	ld (hl), a
@@ -5507,8 +5538,8 @@ l_382:
 	inc hl
 ; 464                     b--;
 	dec b
-l_380:
-	jp nz, l_379
+l_382:
+	jp nz, l_381
 	pop bc
 	pop de
 	pop hl
@@ -5537,27 +5568,27 @@ setftppassword:
 ; 479                 c = 0;
 	ld c, 0
 ; 480                 do {
-l_384:
+l_386:
 ; 481                     a = *de;
 	ld a, (de)
 ; 482                     if ((a = c) == 1) {
 	ld a, c
 	cp 1
-	jp nz, l_387
+	jp nz, l_389
 ; 483                         a = 0xFF;
 	ld a, 255
-	jp l_388
-l_387:
+	jp l_390
+l_389:
 ; 484                     } else if((a = *de) == 0) {
 	ld a, (de)
 	or a
-	jp nz, l_389
+	jp nz, l_391
 ; 485                         c = 1;
 	ld c, 1
 ; 486                         a = 0x00;
 	ld a, 0
-l_389:
-l_388:
+l_391:
+l_390:
 ; 487                     }
 ; 488                     *hl = a;
 	ld (hl), a
@@ -5567,8 +5598,8 @@ l_388:
 	inc hl
 ; 491                     b--;
 	dec b
-l_385:
-	jp nz, l_384
+l_387:
+	jp nz, l_386
 ; 492                 } while (flag_nz);
 ; 493                 
 ; 494                 delay5msI2C();
@@ -5626,15 +5657,15 @@ getftpport:
 ; 522                 b = 6;
 	ld b, 6
 ; 523                 do {
-l_391:
+l_393:
 ; 524                     a = *de;
 	ld a, (de)
 ; 525                     if(a==0xFF){
 	cp 255
-	jp nz, l_394
+	jp nz, l_396
 ; 526                         a = 0x00;
 	ld a, 0
-l_394:
+l_396:
 ; 527                     }
 ; 528                     *hl = a;
 	ld (hl), a
@@ -5644,8 +5675,8 @@ l_394:
 	inc hl
 ; 531                     b--;
 	dec b
-l_392:
-	jp nz, l_391
+l_394:
+	jp nz, l_393
 	pop bc
 	pop de
 	pop hl
@@ -5674,27 +5705,27 @@ setftpport:
 ; 546                 c = 0;
 	ld c, 0
 ; 547                 do {
-l_396:
+l_398:
 ; 548                     a = *de;
 	ld a, (de)
 ; 549                     if ((a = c) == 1) {
 	ld a, c
 	cp 1
-	jp nz, l_399
+	jp nz, l_401
 ; 550                         a = 0xFF;
 	ld a, 255
-	jp l_400
-l_399:
+	jp l_402
+l_401:
 ; 551                     } else if((a = *de) == 0) {
 	ld a, (de)
 	or a
-	jp nz, l_401
+	jp nz, l_403
 ; 552                         c = 1;
 	ld c, 1
 ; 553                         a = 0x00;
 	ld a, 0
-l_401:
-l_400:
+l_403:
+l_402:
 ; 554                     }
 ; 555                     *hl = a;
 	ld (hl), a
@@ -5704,8 +5735,8 @@ l_400:
 	inc hl
 ; 558                     b--;
 	dec b
-l_397:
-	jp nz, l_396
+l_399:
+	jp nz, l_398
 ; 559                 } while (flag_nz);
 ; 560                 
 ; 561                 delay5msI2C();
@@ -5790,12 +5821,12 @@ getftpstate:
 	ld (ftpsettingsstateval), a
 ; 604                 if(a != h){
 	cp h
-	jp z, l_403
+	jp z, l_405
 ; 605                     a = 0x01;
 	ld a, 1
 ; 606                     ftpSettingsStateChange = a;
 	ld (ftpsettingsstatechange), a
-l_403:
+l_405:
 	pop bc
 	pop de
 	pop hl
@@ -5825,175 +5856,259 @@ updateftplist:
 	ld h, 0
 ; 622         sendCommand();
 	call sendcommand
+; 623         
+; 624         delay5msI2C();
+	call delay5msi2c
+; 625         i2cWaitingForAccess();
+	call i2cwaitingforaccess
+; 626         busRecoveryI2C();
+	call busrecoveryi2c
 	pop hl
 	ret
-; 623     }
-; 624 }
-; 625 
-; 626 void convert4bitToCharA() {
+; 627     }
+; 628 }
+; 629 
+; 630 void convert4bitToCharA() {
 convert4bittochara:
-; 627     if (a < 10) {
+; 631     if (a < 10) {
 	cp 10
-	jp nc, l_405
-; 628         a += 0x30;
+	jp nc, l_407
+; 632         a += 0x30;
 	add 48
-	jp l_406
-l_405:
-; 629     } else {
-; 630         a += 0x37;
-	add 55
-l_406:
-	ret
-; 631     }
-; 632 }
-; 633 
-; 634 /// Получаем список файлов и директорий в текущей папке
-; 635 void getFtpList() {
-getftplist:
-; 636     // Получить ответ
-; 637     // Ответ ESP_I2S_BUFFER
-; 638     // ftpDirList буфер заполнения
-; 639     push_pop(bc) {
-	push bc
-; 640         do {
+	jp l_408
 l_407:
-; 641             //
-; 642             delay5msI2C();
+; 633     } else {
+; 634         a += 0x37;
+	add 55
+l_408:
+	ret
+; 635     }
+; 636 }
+; 637 
+; 638 /// Получаем список файлов и директорий в текущей папке
+; 639 void getFtpList() {
+getftplist:
+; 640     // Получить ответ
+; 641     // Ответ ESP_I2S_BUFFER
+; 642     // ftpDirList буфер заполнения
+; 643     push_pop(bc) {
+	push bc
+; 644         do {
+l_409:
+; 645             //
+; 646             delay5msI2C();
 	call delay5msi2c
-; 643             i2cWaitingForAccess();
+; 647             i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 644             l = 26;
+; 648             l = 26;
 	ld l, 26
-; 645             h = 0;
+; 649             h = 0;
 	ld h, 0
-; 646             sendCommand();
+; 650             sendCommand();
 	call sendcommand
-; 647             //
-; 648             delay5msI2C();
+; 651             //
+; 652             delay5msI2C();
 	call delay5msi2c
-; 649             i2cWaitingForAccess();
+; 653             i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 650             l = 26;
+; 654             l = 26;
 	ld l, 26
-; 651             readNewInBuffer();
+; 655             readNewInBuffer();
 	call readnewinbuffer
-; 652             push_pop(a) {
+; 656             push_pop(a) {
 	push af
-; 653                 push_pop(de) {
+; 657                 push_pop(de) {
 	push de
-; 654                     push_pop(hl) {
+; 658                     push_pop(hl) {
 	push hl
-; 655                         parceBufferToFile();
+; 659                         parceBufferToFile();
 	call parcebuffertofile
 	pop hl
 	pop de
 	pop af
-; 656                     }
-; 657                 }
-; 658             }
-; 659             a = ftpDirListNext;
+l_410:
+; 660                     }
+; 661                 }
+; 662             }
+; 663             //a = ftpDirListNext;
+; 664         } while ((a = ftpDirListNext) != 0x5A); // == 1
 	ld a, (ftpdirlistnext)
-l_408:
-; 660         } while (a == 1);
-	cp 1
-	jp z, l_407
+	cp 90
+	jp nz, l_409
+; 665         
+; 666         delay5msI2C();
+	call delay5msi2c
+; 667         i2cWaitingForAccess();
+	call i2cwaitingforaccess
+; 668         busRecoveryI2C();
+	call busrecoveryi2c
 	pop bc
 	ret
-; 661     }
-; 662 }
-; 663 
-; 664 /// Указать какой файл скачивать
-; 665 void ftpFileDownload() {
+; 669     }
+; 670 }
+; 671 
+; 672 /// Указать какой файл скачивать
+; 673 void ftpFileDownload() {
 ftpfiledownload:
-; 666     push_pop(de) {
+; 674     push_pop(de) {
 	push de
-; 667         push_pop(hl) {
+; 675         push_pop(hl) {
 	push hl
-; 668             de = ESP_I2S_BUFFER;
+; 676             de = ESP_I2S_BUFFER;
 	ld de, esp_i2s_buffer
-; 669             a = ftpViewCurrentPos;
+; 677             a = ftpViewCurrentPos;
 	ld a, (ftpviewcurrentpos)
-; 670             *de = a;
+; 678             *de = a;
 	ld (de), a
-; 671             //
-; 672             delay5msI2C();
+; 679             //
+; 680             delay5msI2C();
 	call delay5msi2c
-; 673             i2cWaitingForAccess();
+; 681             i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 674             //
-; 675             l = 28; // FILE_DOWNLOAD
+; 682             //
+; 683             l = 28; // FILE_DOWNLOAD
 	ld l, 28
-; 676             h = 1; // 1 байт
+; 684             h = 1; // 1 байт
 	ld h, 1
-; 677             sendCommand();
+; 685             sendCommand();
 	call sendcommand
 	pop hl
 	pop de
 	ret
-; 678         }
-; 679     }
-; 680 }
-; 681 
-; 682 /// Скачать указанный файл
-; 683 void ftpFileDownloadNext() {
+; 686         }
+; 687     }
+; 688 }
+; 689 
+; 690 /// Скачать указанный файл
+; 691 void ftpFileDownloadNext() {
 ftpfiledownloadnext:
-; 684     push_pop(hl) {
+; 692     push_pop(hl) {
 	push hl
-; 685         a = 0x01;
+; 693         a = 0x01;
 	ld a, 1
-; 686         ftpFileLoadViewCheckSumState = a;
+; 694         ftpFileLoadViewCheckSumState = a;
 	ld (ftpfileloadviewchecksumstate), a
-; 687         do {
-l_410:
-; 688             // Если контрольная сумма верна просим следующий буфер
-; 689             if ((a = ftpFileLoadViewCheckSumState) == 0x01) {
+; 695         do {
+l_412:
+; 696             // Если контрольная сумма верна просим следующий буфер
+; 697             if ((a = ftpFileLoadViewCheckSumState) == 0x01) {
 	ld a, (ftpfileloadviewchecksumstate)
 	cp 1
-	jp nz, l_413
-; 690                 delay5msI2C();
+	jp nz, l_415
+; 698                 delay5msI2C();
 	call delay5msi2c
-; 691                 i2cWaitingForAccess();
+; 699                 i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 692                 l = 29;
+; 700                 l = 29;
 	ld l, 29
-; 693                 h = 0;
+; 701                 h = 0;
 	ld h, 0
-; 694                 sendCommand();
+; 702                 sendCommand();
 	call sendcommand
-l_413:
-; 695             }
-; 696             
-; 697             // Получить буфер
-; 698             delay5msI2C();
+l_415:
+; 703             }
+; 704             
+; 705             // Получить буфер
+; 706             delay5msI2C();
 	call delay5msi2c
-; 699             i2cWaitingForAccess();
+; 707             i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 700             l = 30;
+; 708             l = 30;
 	ld l, 30
-; 701             h = 0;
+; 709             h = 0;
 	ld h, 0
-; 702             sendCommand();
+; 710             sendCommand();
 	call sendcommand
-; 703             //
-; 704             delay5msI2C();
+; 711             //
+; 712             delay5msI2C();
 	call delay5msi2c
-; 705             i2cWaitingForAccess();
+; 713             i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 706             l = 15; //(12) //26; (20)
+; 714             l = 15; //(12) //26; (20)
 	ld l, 15
-; 707             readNewInBuffer();
+; 715             readNewInBuffer();
 	call readnewinbuffer
-; 708             
-; 709             // Распарсить буфер и пррверить контрольную сумму
-; 710             ftpFileLoadViewParce();
+; 716             
+; 717             // Распарсить буфер и пррверить контрольную сумму
+; 718             ftpFileLoadViewParce();
 	call ftpfileloadviewparce
-l_411:
-; 711             
-; 712         } while ((a = ftpFileLoadViewIsNextData) == 1);
+l_413:
+; 719             
+; 720         } while ((a = ftpFileLoadViewIsNextData) != 0x5A); // == 1
 	ld a, (ftpfileloadviewisnextdata)
-	cp 1
-	jp z, l_410
+	cp 90
+	jp nz, l_412
 	pop hl
+	ret
+; 721     }
+; 722 }
+; 723 
+; 724 /// Сменить директорию
+; 725 void ftpChangeDirPos() {
+ftpchangedirpos:
+; 726     push_pop(de) {
+	push de
+; 727         push_pop(hl) {
+	push hl
+; 728             de = ESP_I2S_BUFFER;
+	ld de, esp_i2s_buffer
+; 729             a = ftpViewCurrentPos;
+	ld a, (ftpviewcurrentpos)
+; 730             *de = a;
+	ld (de), a
+; 731             //
+; 732             delay5msI2C();
+	call delay5msi2c
+; 733             i2cWaitingForAccess();
+	call i2cwaitingforaccess
+; 734             //
+; 735             l = 32; // FTP_DIR_INDEX
+	ld l, 32
+; 736             h = 1; // 1 байт
+	ld h, 1
+; 737             sendCommand();
+	call sendcommand
+; 738             
+; 739             delay5msI2C();
+	call delay5msi2c
+; 740             i2cWaitingForAccess();
+	call i2cwaitingforaccess
+; 741             busRecoveryI2C();
+	call busrecoveryi2c
+	pop hl
+	pop de
+	ret
+; 742         }
+; 743     }
+; 744 }
+; 745 
+; 746 /// Сменить директорию вверх
+; 747 void ftpChangeDirUp() {
+ftpchangedirup:
+; 748     push_pop(de) {
+	push de
+; 749         push_pop(hl) {
+	push hl
+; 750             delay5msI2C();
+	call delay5msi2c
+; 751             i2cWaitingForAccess();
+	call i2cwaitingforaccess
+; 752             //
+; 753             l = 31; // FTP_DIR_UP
+	ld l, 31
+; 754             h = 0;
+	ld h, 0
+; 755             sendCommand();
+	call sendcommand
+; 756             
+; 757             delay5msI2C();
+	call delay5msi2c
+; 758             i2cWaitingForAccess();
+	call i2cwaitingforaccess
+; 759             busRecoveryI2C();
+	call busrecoveryi2c
+	pop hl
+	pop de
 	ret
 ; 11 void needUpdateFtpList() {
 needupdateftplist:
@@ -6010,12 +6125,12 @@ needupdateftplist:
 	ld a, (ftpdirlistcount)
 ; 18     if (a >= 16) {
 	cp 16
-	jp c, l_415
+	jp c, l_417
 ; 19         a = 16;
 	ld a, 16
 ; 20         ftpDirListCount = a;
 	ld (ftpdirlistcount), a
-l_415:
+l_417:
 ; 21     }
 ; 22     
 ; 23     a = 0;
@@ -6039,7 +6154,7 @@ clearview:
 ; 34             c = 0;
 	ld c, 0
 ; 35             do {
-l_417:
+l_419:
 ; 36                 ftpViewPosCursorC();
 	call ftpviewposcursorc
 ; 37                 hl = wifiSettingsEmpty18;
@@ -6050,12 +6165,14 @@ l_417:
 	dec b
 ; 40                 c++;
 	inc c
-l_418:
-	jp nz, l_417
+l_420:
+; 41             } while ((a = b) > 0);
+	ld a, b
+	or a
+	jp nz, l_419
 	pop bc
 	pop hl
 	ret
-; 41             } while (flag_nz);
 ; 42         }
 ; 43     }
 ; 44 }
@@ -6067,7 +6184,7 @@ ftpviewdataupdate:
 ; 48         b = 0;
 	ld b, 0
 ; 49         do {
-l_420:
+l_422:
 ; 50             a = 0x00;
 	ld a, 0
 ; 51             inverceAddress = a;
@@ -6076,17 +6193,17 @@ l_420:
 ; 53             if ((a = rootViewCurrentView) == rootViewCurrentFTPView) {
 	ld a, (rootviewcurrentview)
 	cp 1
-	jp nz, l_423
+	jp nz, l_425
 ; 54                 if ((a = ftpViewCurrentPos) == b) {
 	ld a, (ftpviewcurrentpos)
 	cp b
-	jp nz, l_425
+	jp nz, l_427
 ; 55                     a = 0xFF;
 	ld a, 255
 ; 56                     inverceAddress = a;
 	ld (inverceaddress), a
+l_427:
 l_425:
-l_423:
 ; 57                 }
 ; 58             }
 ; 59             
@@ -6102,220 +6219,225 @@ l_423:
 ; 65             
 ; 66             b++;
 	inc b
-; 67             //a = ftpDirListCount;
-; 68             //a++;
-; 69             a = b;
+; 67             a = ftpDirListCount;
+	ld a, (ftpdirlistcount)
+; 68             c = a;
+	ld c, a
+l_423:
+; 69         } while ((a = b) < c);
 	ld a, b
-l_421:
-; 70         } while (a < 14);
-	cp 14
-	jp c, l_420
+	cp c
+	jp c, l_422
 	pop bc
 	ret
-; 71     }
-; 72 }
-; 73 
-; 74 void ftpViewShowValueA() {
+; 70     }
+; 71 }
+; 72 
+; 73 void ftpViewShowValueA() {
 ftpviewshowvaluea:
-; 75     push_pop(hl) {
+; 74     push_pop(hl) {
 	push hl
-; 76         push_pop(de) {
+; 75         push_pop(de) {
 	push de
-; 77             push_pop(bc) {
+; 76             push_pop(bc) {
 	push bc
-; 78                 de = 16;
+; 77                 de = 16;
 	ld de, 16
-; 79                 c = a;
+; 78                 c = a;
 	ld c, a
-; 80                 ftpViewPosCursorC();
+; 79                 ftpViewPosCursorC();
 	call ftpviewposcursorc
-; 81                 hl = ftpDirList;
+; 80                 hl = ftpDirList;
 	ld hl, ftpdirlist
-; 82                 if ((a = c) > 0) {
+; 81                 if ((a = c) > 0) {
 	ld a, c
 	or a
-	jp z, l_427
-; 83                     do {
-l_429:
-; 84                         hl += de;
+	jp z, l_429
+; 82                     do {
+l_431:
+; 83                         hl += de;
 	add hl, de
-; 85                         c--;
+; 84                         c--;
 	dec c
-l_430:
-	jp nz, l_429
-l_427:
-; 86                     } while (flag_nz);
-; 87                 }
-; 88                 //hl = ftpLabel;
-; 89                 printHLStr();
+l_432:
+	jp nz, l_431
+l_429:
+; 85                     } while (flag_nz);
+; 86                 }
+; 87                 //hl = ftpLabel;
+; 88                 printHLStr();
 	call printhlstr
 	pop bc
 	pop de
 	pop hl
 	ret
-; 90             }
-; 91         }
-; 92     }
-; 93 }
-; 94 
-; 95 void ftpViewPosCursorC() {
+; 89             }
+; 90         }
+; 91     }
+; 92 }
+; 93 
+; 94 void ftpViewPosCursorC() {
 ftpviewposcursorc:
-; 96     push_pop(hl) {
+; 95     push_pop(hl) {
 	push hl
-; 97         a = ftpViewY;
+; 96         a = ftpViewY;
 	ld a, (ftpviewy)
-; 98         a += 1;
+; 97         a += 1;
 	add 1
-; 99         a += c;
+; 98         a += c;
 	add c
-; 100         h = a;
+; 99         h = a;
 	ld h, a
-; 101         a = ftpViewX;
+; 100         a = ftpViewX;
 	ld a, (ftpviewx)
-; 102         a += 3;
+; 101         a += 3;
 	add 3
-; 103         l = a;
+; 102         l = a;
 	ld l, a
-; 104         setPosCursor();
+; 103         setPosCursor();
 	call setposcursor
 	pop hl
 	ret
-; 105     }
-; 106 }
-; 107 
-; 108 void ftpViewKeyA() {
+; 104     }
+; 105 }
+; 106 
+; 107 void ftpViewKeyA() {
 ftpviewkeya:
-; 109     push_pop(hl) {
+; 108     push_pop(hl) {
 	push hl
-; 110         l = a;
+; 109         l = a;
 	ld l, a
-; 111         if ((a = rootViewCurrentView) == rootViewCurrentFTPView) {
+; 110         if ((a = rootViewCurrentView) == rootViewCurrentFTPView) {
 	ld a, (rootviewcurrentview)
 	cp 1
-	jp nz, l_432
-; 112             a = l;
-	ld a, l
-; 113             if (a == 0x09) { // TAB - Change to local disk
-	cp 9
 	jp nz, l_434
-; 114                 a = rootViewCurrentDiskView; // переходим на список файлов на диске
-	ld a, 0
-; 115                 rootViewCurrentView = a;
-	ld (rootviewcurrentview), a
-; 116                 ftpViewDataUpdate();
-	call ftpviewdataupdate
-; 117                 showDiskList();
-	call showdisklist
-	jp l_435
-l_434:
-; 118             } else {
-; 119                 a = ftpDirListCount;
-	ld a, (ftpdirlistcount)
-; 120                 h = a;
-	ld h, a
-; 121                 a = l;
+; 111             a = l;
 	ld a, l
-; 122                 if (a == 0x1A) { //down
-	cp 26
+; 112             if (a == 0x09) { // TAB - Change to local disk
+	cp 9
 	jp nz, l_436
-; 123                     a = ftpViewCurrentPos;
-	ld a, (ftpviewcurrentpos)
-; 124                     a++;
-	inc a
-; 125                     if (a == h) {
-	cp h
-	jp nz, l_438
-; 126                         a = 0;
+; 113                 a = rootViewCurrentDiskView; // переходим на список файлов на диске
 	ld a, 0
-l_438:
-; 127                     }
-; 128                     ftpViewCurrentPos = a;
-	ld (ftpviewcurrentpos), a
+; 114                 rootViewCurrentView = a;
+	ld (rootviewcurrentview), a
+; 115                 ftpViewDataUpdate();
+	call ftpviewdataupdate
+; 116                 showDiskList();
+	call showdisklist
 	jp l_437
 l_436:
-; 129                 } else if (a == 0x19) { //up
-	cp 25
-	jp nz, l_440
-; 130                     a = ftpViewCurrentPos;
+; 117             } else {
+; 118                 a = ftpDirListCount;
+	ld a, (ftpdirlistcount)
+; 119                 h = a;
+	ld h, a
+; 120                 a = l;
+	ld a, l
+; 121                 if (a == 0x1A) { //down
+	cp 26
+	jp nz, l_438
+; 122                     a = ftpViewCurrentPos;
 	ld a, (ftpviewcurrentpos)
-; 131                     if (a == 0) {
-	or a
+; 123                     a++;
+	inc a
+; 124                     if (a == h) {
+	cp h
+	jp nz, l_440
+; 125                         a = 0;
+	ld a, 0
+l_440:
+; 126                     }
+; 127                     ftpViewCurrentPos = a;
+	ld (ftpviewcurrentpos), a
+	jp l_439
+l_438:
+; 128                 } else if (a == 0x19) { //up
+	cp 25
 	jp nz, l_442
-; 132                         a = h;
+; 129                     a = ftpViewCurrentPos;
+	ld a, (ftpviewcurrentpos)
+; 130                     if (a == 0) {
+	or a
+	jp nz, l_444
+; 131                         a = h;
 	ld a, h
-; 133                         a--;
+; 132                         a--;
 	dec a
+	jp l_445
+l_444:
+; 133                     } else {
+; 134                         a--;
+	dec a
+l_445:
+; 135                     }
+; 136                     ftpViewCurrentPos = a;
+	ld (ftpviewcurrentpos), a
 	jp l_443
 l_442:
-; 134                     } else {
-; 135                         a--;
-	dec a
-l_443:
-; 136                     }
-; 137                     ftpViewCurrentPos = a;
-	ld (ftpviewcurrentpos), a
-	jp l_441
-l_440:
-; 138                 } else if (a == 0x0D) { //Enter
+; 137                 } else if (a == 0x0D) { //Enter
 	cp 13
-	jp nz, l_444
-; 139                     ftpViewCurrentPosIsDir();
+	jp nz, l_446
+; 138                     ftpViewCurrentPosIsDir();
 	call ftpviewcurrentposisdir
-; 140                     if ((a = ftpDirListIsDir) == 1) {
+; 139                     if ((a = ftpDirListIsDir) == 1) {
 	ld a, (ftpdirlistisdir)
 	cp 1
-	jp nz, l_446
-; 141                         if ((a = ftpViewCurrentPos) == 0) {
+	jp nz, l_448
+; 140                         if ((a = ftpViewCurrentPos) == 0) {
 	ld a, (ftpviewcurrentpos)
 	or a
-	jp nz, l_448
+	jp nz, l_450
+; 141                             ftpChangeDirUp();
+	call ftpchangedirup
+	jp l_451
+l_450:
+; 142                         } else {
+; 143                             ftpChangeDirPos();
+	call ftpchangedirpos
+l_451:
+; 144                         }
+; 145                         clearView();
+	call clearview
+; 146                         needUpdateFtpList();
+	call needupdateftplist
 	jp l_449
 l_448:
-; 142                             // DirUp
-; 143                         } else {
+; 147                     } else {
+; 148                         loadSelectFile();
+	call loadselectfile
 l_449:
 	jp l_447
 l_446:
-; 144                             // Dir enter
-; 145                         }
-; 146                     } else {
-; 147                         showFtpFileLoadView();
-	call showftpfileloadview
-; 148                         ftpFileLoadViewNeedLoad();
-	call ftpfileloadviewneedload
-l_447:
-	jp l_445
-l_444:
 ; 149                     }
 ; 150                 } else if (a == 0x34) { // C (COPY)
 	cp 52
-	jp nz, l_450
+	jp nz, l_452
 ; 151                     ftpViewCurrentPosIsDir();
 	call ftpviewcurrentposisdir
 ; 152                     if ((a = ftpDirListIsDir) == 0) {
 	ld a, (ftpdirlistisdir)
 	or a
-	jp nz, l_452
-; 153                         showFtpFileLoadView();
-	call showftpfileloadview
-; 154                         ftpFileLoadViewNeedLoad();
-	call ftpfileloadviewneedload
-l_452:
-	jp l_451
-l_450:
-; 155                     }
-; 156                 } else if (a == 'R') { // R (Refresh)
-	cp 82
 	jp nz, l_454
+; 153                         loadSelectFile();
+	call loadselectfile
+l_454:
+	jp l_453
+l_452:
+; 154                     }
+; 155                 } else if (a == 'R') { // R (Refresh)
+	cp 82
+	jp nz, l_456
+; 156                     clearView();
+	call clearview
 ; 157                     needUpdateFtpList();
 	call needupdateftplist
-l_454:
-l_451:
-l_445:
-l_441:
+l_456:
+l_453:
+l_447:
+l_443:
+l_439:
 l_437:
-l_435:
-l_432:
+l_434:
 	pop hl
 	ret
 ; 158                 }
@@ -6324,320 +6446,326 @@ l_432:
 ; 161     }
 ; 162 }
 ; 163 
-; 164 /// from ESP_I2S_BUFFER
-; 165 /// to ftpDirList
-; 166 /// count ftpDirListCount
-; 167 /// next ftpDirListNext
-; 168 void parceBufferToFile() {
+; 164 void loadSelectFile() {
+loadselectfile:
+; 165     showFtpFileLoadView();
+	call showftpfileloadview
+; 166     ftpFileLoadViewNeedLoad();
+	call ftpfileloadviewneedload
+; 167     updateDiskList();
+	call updatedisklist
+; 168     updateRootUI();
+	call updaterootui
+; 169     showDiskList();
+	jp showdisklist
+; 170 }
+; 171 
+; 172 /// from ESP_I2S_BUFFER
+; 173 /// to ftpDirList
+; 174 /// count ftpDirListCount
+; 175 /// next ftpDirListNext
+; 176 void parceBufferToFile() {
 parcebuffertofile:
-; 169     de = ESP_I2S_BUFFER;
+; 177     de = ESP_I2S_BUFFER;
 	ld de, esp_i2s_buffer
-; 170     // (0) - порядковый номер Должен быть == ftpDirListCount + 1
-; 171     a = ftpDirListCount;
+; 178     // (0) - порядковый номер Должен быть == ftpDirListCount + 1
+; 179     a = ftpDirListCount;
 	ld a, (ftpdirlistcount)
-; 172     b = a;
-	ld b, a
-; 173     a = *de;
-	ld a, (de)
-; 174     if (a != b) {
-	cp b
-	jp z, l_456
-; 175         a = 0;
-	ld a, 0
-; 176         ftpDirListNext = a;
-	ld (ftpdirlistnext), a
-; 177         return;
-	ret
-l_456:
-; 178     }
-; 179     hl = ftpDirList;
+; 180 //    b = a;
+; 181 //    a = *de;
+; 182 //    if (a != b) {
+; 183 //        a = 0x5A;
+; 184 //        ftpDirListNext = a;
+; 185 //        return;
+; 186 //    }
+; 187     hl = ftpDirList;
 	ld hl, ftpdirlist
-; 180     b = 0;
+; 188     b = 0;
 	ld b, 0
-; 181     carry_rotate_left(a, 4);
+; 189     carry_rotate_left(a, 4);
 	rla
 	rla
 	rla
 	rla
-; 182     if (flag_c) { // Если переполняние младшего разряда, инкремент старшего
+; 190     if (flag_c) { // Если переполняние младшего разряда, инкремент старшего
 	jp nc, l_458
-; 183         b++;
+; 191         b++;
 	inc b
 l_458:
-; 184     }
-; 185     c = a;
+; 192     }
+; 193     c = a;
 	ld c, a
-; 186     hl += bc; // ftpDirList + смещение
+; 194     hl += bc; // ftpDirList + смещение
 	add hl, bc
-; 187     a = ftpDirListCount;
+; 195 //    a = ftpDirListCount;
+; 196 //    a ++;
+; 197 //    ftpDirListCount = a;
+; 198     // (1) - Флаг окончания пакета. Если 1 - то продолжаем. Любой другой - СТОП!
+; 199     de++;
+	inc de
+; 200     a = *de;
+	ld a, (de)
+; 201     ftpDirListNext = a;
+	ld (ftpdirlistnext), a
+; 202     if (a != 0x5A) {
+	cp 90
+	jp z, l_460
+; 203         a = ftpDirListCount;
 	ld a, (ftpdirlistcount)
-; 188     a ++;
+; 204         a ++;
 	inc a
-; 189     ftpDirListCount = a;
+; 205         ftpDirListCount = a;
 	ld (ftpdirlistcount), a
-; 190     // (1) - Флаг окончания пакета. Если 1 - то продолжаем. Любой другой - СТОП!
-; 191     de++;
-	inc de
-; 192     a = *de;
-	ld a, (de)
-; 193     if (a == 0x01) {
-	cp 1
-	jp nz, l_460
-; 194         a = 1;
-	ld a, 1
-; 195         ftpDirListNext = a;
-	ld (ftpdirlistnext), a
-	jp l_461
 l_460:
-; 196     } else {
-; 197         a = 0;
-	ld a, 0
-; 198         ftpDirListNext = a;
-	ld (ftpdirlistnext), a
-; 199         return;
-	ret
-l_461:
-; 200     }
-; 201     // (2) - Флаг директоии
-; 202     de++;
+; 206     }
+; 207 //    if (a == 0x01) {
+; 208 //        a = 1;
+; 209 //        ftpDirListNext = a;
+; 210 //    } else {
+; 211 //        a = 0;
+; 212 //        ftpDirListNext = a;
+; 213 //        return;
+; 214 //    }
+; 215     // (2) - Флаг директоии
+; 216     de++;
 	inc de
-; 203     a = *de;
+; 217     a = *de;
 	ld a, (de)
-; 204     a &= 0x01;
+; 218     a &= 0x01;
 	and 1
-; 205     ftpDirListIsDir = a;
+; 219     ftpDirListIsDir = a;
 	ld (ftpdirlistisdir), a
-; 206     if (a == 0) {
+; 220     if (a == 0) {
 	or a
 	jp nz, l_462
-; 207         a = ' ';
+; 221         a = ' ';
 	ld a, 32
-; 208         *hl = a;
+; 222         *hl = a;
 	ld (hl), a
 	jp l_463
 l_462:
-; 209     } else {
-; 210         a = ' '; //'>';
+; 223     } else {
+; 224         a = ' '; //'>';
 	ld a, 32
-; 211         *hl = a;
+; 225         *hl = a;
 	ld (hl), a
 l_463:
-; 212     }
-; 213     hl++;
+; 226     }
+; 227     hl++;
 	inc hl
-; 214     // (3-4) - размер файла
-; 215     de++;
+; 228     // (3-4) - размер файла
+; 229     de++;
 	inc de
-; 216     parceSizeFileInBuffer();
+; 230     parceSizeFileInBuffer();
 	call parcesizefileinbuffer
-; 217     // (5-) Имя файла/директории
-; 218     b = 9;
+; 231     // (5-) Имя файла/директории
+; 232     b = 9;
 	ld b, 9
-; 219     do {
+; 233     do {
 l_464:
-; 220         a = *de;
+; 234         a = *de;
 	ld a, (de)
-; 221         if (a == 0x00) {
+; 235         if (a == 0x00) {
 	or a
 	jp nz, l_467
-; 222             a = ' ';
+; 236             a = ' ';
 	ld a, 32
 l_467:
-; 223         }
-; 224         *hl = a;
+; 237         }
+; 238         *hl = a;
 	ld (hl), a
-; 225         if ((a = b) == 1) {
+; 239         if ((a = b) == 1) {
 	ld a, b
 	cp 1
 	jp nz, l_469
-; 226             a = ' ';
+; 240             a = ' ';
 	ld a, 32
-; 227             *hl = a;
+; 241             *hl = a;
 	ld (hl), a
 l_469:
-; 228         }
-; 229         de++;
+; 242         }
+; 243         de++;
 	inc de
-; 230         hl++;
+; 244         hl++;
 	inc hl
-; 231         b--;
+; 245         b--;
 	dec b
 l_465:
 	jp nz, l_464
 	ret
-; 232     } while (flag_nz);
-; 233 }
-; 234 
-; 235 /// HL - result string
-; 236 /// DE - 2 byte size
-; 237 void parceSizeFileInBuffer() {
+; 246     } while (flag_nz);
+; 247 }
+; 248 
+; 249 /// HL - result string
+; 250 /// DE - 2 byte size
+; 251 void parceSizeFileInBuffer() {
 parcesizefileinbuffer:
-; 238     push_pop(hl) {
+; 252     push_pop(hl) {
 	push hl
-; 239         push_pop(bc) {
+; 253         push_pop(bc) {
 	push bc
-; 240             bc = 9;
+; 254             bc = 9;
 	ld bc, 9
-; 241             hl += bc; // смещаем указатель на позицию с размеров файла
+; 255             hl += bc; // смещаем указатель на позицию с размеров файла
 	add hl, bc
-; 242             a = ' ';
+; 256             a = ' ';
 	ld a, 32
-; 243             *hl = a;
+; 257             *hl = a;
 	ld (hl), a
-; 244             hl++;
+; 258             hl++;
 	inc hl
-; 245             // Размер
-; 246             if ((a = ftpDirListIsDir) == 0) {
+; 259             // Размер
+; 260             if ((a = ftpDirListIsDir) == 0) {
 	ld a, (ftpdirlistisdir)
 	or a
 	jp nz, l_471
-; 247                 a = *de;
+; 261                 a = *de;
 	ld a, (de)
-; 248                 a &= 0xF0;
+; 262                 a &= 0xF0;
 	and 240
-; 249                 cyclic_rotate_right(a, 4);
+; 263                 cyclic_rotate_right(a, 4);
 	rrca
 	rrca
 	rrca
 	rrca
-; 250                 convert4bitToCharA();
+; 264                 convert4bitToCharA();
 	call convert4bittochara
-; 251                 *hl = a;
+; 265                 *hl = a;
 	ld (hl), a
-; 252                 hl++;
+; 266                 hl++;
 	inc hl
-; 253                 a = *de;
+; 267                 a = *de;
 	ld a, (de)
-; 254                 a &= 0x0F;
+; 268                 a &= 0x0F;
 	and 15
-; 255                 convert4bitToCharA();
+; 269                 convert4bitToCharA();
 	call convert4bittochara
-; 256                 *hl = a;
+; 270                 *hl = a;
 	ld (hl), a
-; 257                 hl++;
+; 271                 hl++;
 	inc hl
-; 258                 de++;
+; 272                 de++;
 	inc de
-; 259                 
-; 260                 a = *de;
+; 273                 
+; 274                 a = *de;
 	ld a, (de)
-; 261                 a &= 0xF0;
+; 275                 a &= 0xF0;
 	and 240
-; 262                 cyclic_rotate_right(a, 4);
+; 276                 cyclic_rotate_right(a, 4);
 	rrca
 	rrca
 	rrca
 	rrca
-; 263                 convert4bitToCharA();
+; 277                 convert4bitToCharA();
 	call convert4bittochara
-; 264                 *hl = a;
+; 278                 *hl = a;
 	ld (hl), a
-; 265                 hl++;
+; 279                 hl++;
 	inc hl
-; 266                 a = *de;
+; 280                 a = *de;
 	ld a, (de)
-; 267                 a &= 0x0F;
+; 281                 a &= 0x0F;
 	and 15
-; 268                 convert4bitToCharA();
+; 282                 convert4bitToCharA();
 	call convert4bittochara
-; 269                 *hl = a;
-	ld (hl), a
-; 270                 hl++;
-	inc hl
-; 271                 de++;
-	inc de
-	jp l_472
-l_471:
-; 272             } else {
-; 273                 a = ' ';
-	ld a, 32
-; 274                 *hl = a;
-	ld (hl), a
-; 275                 hl++;
-	inc hl
-; 276                 a = 'D';
-	ld a, 68
-; 277                 *hl = a;
-	ld (hl), a
-; 278                 hl++;
-	inc hl
-; 279                 a = 'I';
-	ld a, 73
-; 280                 *hl = a;
-	ld (hl), a
-; 281                 hl++;
-	inc hl
-; 282                 a = 'R';
-	ld a, 82
 ; 283                 *hl = a;
 	ld (hl), a
 ; 284                 hl++;
 	inc hl
 ; 285                 de++;
 	inc de
-; 286                 de++;
+	jp l_472
+l_471:
+; 286             } else {
+; 287                 a = ' ';
+	ld a, 32
+; 288                 *hl = a;
+	ld (hl), a
+; 289                 hl++;
+	inc hl
+; 290                 a = 'D';
+	ld a, 68
+; 291                 *hl = a;
+	ld (hl), a
+; 292                 hl++;
+	inc hl
+; 293                 a = 'I';
+	ld a, 73
+; 294                 *hl = a;
+	ld (hl), a
+; 295                 hl++;
+	inc hl
+; 296                 a = 'R';
+	ld a, 82
+; 297                 *hl = a;
+	ld (hl), a
+; 298                 hl++;
+	inc hl
+; 299                 de++;
+	inc de
+; 300                 de++;
 	inc de
 l_472:
-; 287             }
-; 288             //
-; 289             a = 0;
+; 301             }
+; 302             //
+; 303             a = 0;
 	ld a, 0
-; 290             *hl = a; // End char string
+; 304             *hl = a; // End char string
 	ld (hl), a
 	pop bc
 	pop hl
 	ret
-; 291         }
-; 292     }
-; 293 }
-; 294 
-; 295 void ftpViewCurrentPosIsDir() {
+; 305         }
+; 306     }
+; 307 }
+; 308 
+; 309 void ftpViewCurrentPosIsDir() {
 ftpviewcurrentposisdir:
-; 296     push_pop(hl) {
+; 310     push_pop(hl) {
 	push hl
-; 297         push_pop(bc) {
+; 311         push_pop(bc) {
 	push bc
-; 298             hl = ftpDirList;
+; 312             hl = ftpDirList;
 	ld hl, ftpdirlist
-; 299             a = ftpViewCurrentPos;
+; 313             a = ftpViewCurrentPos;
 	ld a, (ftpviewcurrentpos)
-; 300             b = 0;
+; 314             b = 0;
 	ld b, 0
-; 301             carry_rotate_left(a, 4);
+; 315             carry_rotate_left(a, 4);
 	rla
 	rla
 	rla
 	rla
-; 302             if (flag_c) { // Если переполняние младшего разряда, инкремент старшего
+; 316             if (flag_c) { // Если переполняние младшего разряда, инкремент старшего
 	jp nc, l_473
-; 303                 b++;
+; 317                 b++;
 	inc b
 l_473:
-; 304             }
-; 305             c = a;
+; 318             }
+; 319             c = a;
 	ld c, a
-; 306             hl += bc;
+; 320             hl += bc;
 	add hl, bc
-; 307             // + 12 (DIR)
-; 308             bc = 12;
+; 321             // + 12 (DIR)
+; 322             bc = 12;
 	ld bc, 12
-; 309             hl += bc;
+; 323             hl += bc;
 	add hl, bc
-; 310             a = *hl;
+; 324             a = *hl;
 	ld a, (hl)
-; 311             if (a == 'D') {
+; 325             if (a == 'D') {
 	cp 68
 	jp nz, l_475
-; 312                 a = 1;
+; 326                 a = 1;
 	ld a, 1
 	jp l_476
 l_475:
-; 313             } else {
-; 314                 a = 0;
+; 327             } else {
+; 328                 a = 0;
 	ld a, 0
 l_476:
-; 315             }
-; 316             ftpDirListIsDir = a;
+; 329             }
+; 330             ftpDirListIsDir = a;
 	ld (ftpdirlistisdir), a
 	pop bc
 	pop hl
@@ -6901,9 +7029,9 @@ l_488:
 	pop hl
 l_485:
 ; 48                 }
-; 49             } while ((a = h) < 30);
+; 49             } while ((a = h) < 40);
 	ld a, h
-	cp 30
+	cp 40
 	jp c, l_484
 ; 50             setSystemFont();
 	call setsystemfont
@@ -6960,8 +7088,7 @@ ftpfileloadviewparce:
 ; 82                 //stopByte
 ; 83                 a = *de;
 	ld a, (de)
-; 84                 a &= 0x01;
-	and 1
+; 84                 //a &= 0x01;
 ; 85                 ftpFileLoadViewIsNextData = a;
 	ld (ftpfileloadviewisnextdata), a
 ; 86                 de++;
@@ -7106,15 +7233,15 @@ ftpfileloadviewchecksumstate:
 ; 154 uint8_t ftpFileLoadViewProgress = 0;
 ftpfileloadviewprogress:
 	db 0
-; 156 uint8_t FtpFileLoadViewX = 15;
+; 156 uint8_t FtpFileLoadViewX = 10;
 ftpfileloadviewx:
-	db 15
+	db 10
 ; 157 uint8_t FtpFileLoadViewY = 11;
 ftpfileloadviewy:
 	db 11
-; 158 uint8_t FtpFileLoadViewEX = 49;
+; 158 uint8_t FtpFileLoadViewEX = 54;
 ftpfileloadviewex:
-	db 49
+	db 54
 ; 159 uint8_t FtpFileLoadViewEY = 14;
 ftpfileloadviewey:
 	db 14
