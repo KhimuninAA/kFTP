@@ -1,4 +1,4 @@
-<img align="right" width=96 src="img/icon.png" />
+<img align="right" width=64 src="img/icon.png" />
 
 # kFTP
 
@@ -36,17 +36,17 @@ FTP клиент, для компьютера Орион-128.
 Для вызова экрана настройки WiFi нажмите F2.
 Для выхода из настройки или редактирования без сохранения - нажмите "АР2(ESC)"
 
-<img align="center" width=400 src="img/wifi_settings.jpg" />
+<img align="center" width=400 src="img/wifi_settings_2.jpg" />
 
 Если WiFi не подключен - то вместо IP отображается UNSET.
 
-<img align="center" width=400 src="img/ip_unset.jpg" />
+<img align="center" width=400 src="img/ip_unset_2.jpg" />
 
 ### Выбор сетей Wi-Fi
 Переместите указатель на SSID и нажмите ВВОД
 В открывшемся окне выберите свой SSID. (Английские буквы в названии SSID все отображаются заглавными буквами. Русские буквы исключаются из отображения)
 
-<img align="center" width=400 src="img/SSID_list.jpg" />
+<img align="center" width=400 src="img/ssid_list_2.jpg" />
 
 > ВНИМАНИЕ! Для уменьшение показа доступных сетей установлен порог показа от -88 Дб.
 
@@ -55,7 +55,7 @@ FTP клиент, для компьютера Орион-128.
 Введите пароль для вашей сети. (Пароль должен содержать только заглавные английские буквы и цифры)
 После завершения ввода нажмите ВВОД и ваш пароль сохранится.
 
-<img align="center" width=400 src="img/wifi_pass.jpg" />
+<img align="center" width=400 src="img/wifi_pass_edit.jpg" />
 
 ### Подключение к Wi-Fi
 Для подключения к WiFi надо нажать нажать на "OK" 
@@ -64,7 +64,7 @@ FTP клиент, для компьютера Орион-128.
 ## Настройка соединения FTP
 Для вызова настройки FTP нажмите F3
 
-<img align="center" width=400 src="img/ftp_settings.jpg" />
+<img align="center" width=400 src="img/ftp_settings_2.jpg" />
 
 ### Ввод IP сервера
 
