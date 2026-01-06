@@ -711,13 +711,14 @@ void ftpFileDownloadNext() {
             //
             delay5msI2C();
             i2cWaitingForAccess();
-            l = 15; //(12) //26; (20)
+            l = 15;
             readNewInBuffer();
             
             // Распарсить буфер и пррверить контрольную сумму
             ftpFileLoadViewParce();
             
-        } while ((a = ftpFileLoadViewIsNextData) != 0x5A); // == 1
+        } while ((a = ftpFileLoadViewIsNextData) != 0x5A);
+        // 0x5A признак окончания файла
     }
 }
 

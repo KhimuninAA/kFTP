@@ -4,7 +4,7 @@
 
 FTP клиент, для компьютера Орион-128.
 
-> **Note**
+> [!NOTE]
 > Большая благодарность Алексею Морозову за компилятор с8080 (https://github.com/alemorf/c8080). Без него проект бы не состоялся!
 
 <img align="right" width=175 src="img/breadboard-esp12.jpg" />
