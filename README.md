@@ -1,3 +1,5 @@
+<img align="right" width=64 src="img/icon.png" />
+
 # kFTP
 
 FTP клиент, для компьютера Орион-128.
