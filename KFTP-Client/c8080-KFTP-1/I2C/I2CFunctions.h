@@ -8,7 +8,8 @@
 #ifndef I2CFunctions_h
 #define I2CFunctions_h
 
-#define NOPS nop(); nop(); nop(); nop(); //nop();
+#define NOPS nop(); nop(); //nop(); nop();
+//nop();
 //nop(); //nop(); nop(); nop(); //nop(); nop();
 //nop(); nop(); nop(); nop(); nop(); nop(); nop(); nop(); nop(); nop();
 #define _SLOW_SETTINGS
@@ -145,6 +146,30 @@ void recieveNewI2C() {
         a &= 1;
         b = a;
     }
+}
+
+void readSDAState() {
+    a = 0x80;
+    VV55_PORT_C = a;
+    nop();
+    a = VV55_PORT_C;
+    a &= 1;
+    if (a == 0) {
+        a = 0x01;
+    } else {
+        a = 0x00;
+    }
+}
+
+void needAccess() {
+    do {
+        readSDAState();
+        if (a == 1) {
+            nop();
+            nop();
+            nop();
+        }
+    } while (a == 0x01);
 }
 
 /// вых.[B] - 1 устройство занято

@@ -27,6 +27,8 @@ extern uint8_t rootTimerTike;
 #include "FTPView/FTPViewInclude.h"
 #include "FtpSettings/FtpSettingsInclude.h"
 #include "FtpFileLoadView/FtpFileLoadViewInclude.h"
+#include "NET/ParseHelper/ParseHelperInclude.h"
+#include "DEBUG/DEBUGInclude.h"
 
 #endif /* ExternParams_h */
 

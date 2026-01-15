@@ -65,5 +65,12 @@ void ftpFileDownloadNext();
 void ftpChangeDirPos();
 /// Сменить директорию вверх
 void ftpChangeDirUp();
-    
+/// Получить текущий путь FTP
+void getFtpCurrentPath();
+
+
+/// Загрузить данные (не больше 255) по адресу HL
+/// вх. [HL] - Куда записывать результат
+void loadStringToHL();
+
 #endif /* NETInclude_h */

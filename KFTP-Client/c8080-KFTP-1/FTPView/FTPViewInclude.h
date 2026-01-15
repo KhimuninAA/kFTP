@@ -21,5 +21,7 @@ void parceBufferToFile();
 void parceSizeFileInBuffer();
 void ftpViewCurrentPosIsDir();
 void loadSelectFile();
+/// Обновить на экране текущий путь на FTP
+void updateCurrentPath();
 
 #endif /* FTPViewInclude_h */

@@ -20,6 +20,7 @@ extern uint8_t FtpFileLoadViewEY;
 
 extern uint16_t FtpFileLoadViewTitlelPos;
 extern uint8_t FtpFileLoadViewTitlel[7];
+extern uint16_t ftpFileLoadCurrentPos;
 
 void showFtpFileLoadView();
 void ftpFileLoadViewNeedLoad();

@@ -22,5 +22,9 @@ uint8_t ftpDirListCount = 0;
 uint8_t ftpDirListIsDir = 0;
 
 uint8_t ftpViewCurrentPos = 0;
+uint8_t ftpViewEmpty16[16] = "               ";
+
+uint8_t ftpViewDirPath[26] = "";
+uint16_t ftpViewDirPathPos = 0x1822;
 
 #endif /* FTPView_h */

@@ -12,7 +12,7 @@
 /// вх. [H] - кл-во байт
 /// вх. [ESP_I2S_BUFFER] - байты для отправки
 void sendCommand() {
-    push_pop(de) {
+    push_pop(de) {        
         d = h;
         // form the slave address with the R/W bit (R=1, W=0) at LSB
         a ^= a; // XRA     A Carry = 0

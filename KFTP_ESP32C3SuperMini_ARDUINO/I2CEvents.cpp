@@ -1,12 +1,11 @@
 #include "I2CEvents.h"
-#include <ESP8266WiFi.h>
+#include <WiFi.h>
 #include <Wire.h>
-#include "WIFI.h"
+#include "WIFIMy.h"
 
 //struct 
 ReceiveData receiveData = {NONE, ""};
 uint8_t ftpListPos = 0;
-RequestBufferData requestBufferData = {0,0,0,""};
 
 byte ssidListBuffer[20];
 void createSsidListBuffer() {
@@ -20,53 +19,31 @@ void createSsidListBuffer() {
   for(int i=0; i < 15 ;i++){
     ssidListBuffer[2 + i] = ssidsData[SSIDListPos].ssidCh[i];
   }
+  Serial.println(ssidsData[SSIDListPos].ssidCh);
 }
 
-// ФТП буфер с контрольной суммой из структуры
-void createFtpFileDataBufferA(FtpFileData data) {
+void createSsidBuffer() {
   memset(ssidListBuffer, 0, sizeof(ssidListBuffer));
-  uint8_t sum = 0;
-  //-- Pos
-  uint8_t firstByte = ftpListPos;
-  firstByte &= 0x3F;
-  //-- Next
-  if((ftpListPos + 1) != ftpClientA.ftpFilesCount) {
-    firstByte += 0x40; //(7bit)
-  }
-  //-- Dir
-  if(data.isDir == true) {
-    firstByte += 0x80; //(8bit)
-  }
-  ssidListBuffer[0] = firstByte;
-  sum += firstByte;
-  //-- Size
-  uint16_t size16 = (uint16_t)data.size;
-  ssidListBuffer[1] = (uint8_t)((size16&0xFF00) >> 8); //(size16 >> 8) && 0xFF;
-  sum += ssidListBuffer[1];
-  ssidListBuffer[2] = (uint8_t)(size16&0x00FF); //size16 && 0xFF;
-  sum += ssidListBuffer[2];
-  //-- Name
-  char ftpFileNameChars[16];
-  strncpy(ftpFileNameChars, data.orionName().c_str(), 16);
+  char ssidCh[16];
+  String newSSID = data.ssid;
+  newSSID.toUpperCase();
+  strncpy(ssidCh, newSSID.c_str(), 16);
   int pos = 0;
-  for(int i=0; i < 16 ;i++) {
-    char c = ftpFileNameChars[i];
+  for(int j = 0; j < 16; j++) {
+    char c = ssidCh[j];
     if (c < 0x60) {
-      ssidListBuffer[3 + pos] = c;
-      sum += (uint8_t)c;
+      ssidListBuffer[pos] = c;
       pos++;
-      if (pos > 7) {
-        ssidListBuffer[3 + pos] = 0x00;
-        sum += 0x00;
-        break;
-      }
+    } else if (c == 0) {
+      ssidListBuffer[pos] = 0;
+      break;
     }
   }
-  //-- SUM
-  ssidListBuffer[12] = sum;
+  if (pos >= 15) {
+    ssidListBuffer[pos] = 0;
+  }
 }
 
-// ФТП буфер из структуры
 void createFtpFileDataBuffer(FtpFileData data) {
   memset(ssidListBuffer, 0, sizeof(ssidListBuffer));
   // POSITION - 0
@@ -102,40 +79,11 @@ void createFtpFileDataBuffer(FtpFileData data) {
       }
     }
   }
-}
-
-void createNextRequestBuffer() {
-  memset(ssidListBuffer, 0, sizeof(ssidListBuffer));
-  byte sum = 0;
-  int delta = requestBufferData.pageNum * requestBufferData.pageSize;
-  // Start
-  ssidListBuffer[0] = requestBufferData.pageNum;
-  sum += requestBufferData.pageNum;
-  ssidListBuffer[1] = requestBufferData.pageSize;
-  sum += requestBufferData.pageSize;
-  // IsNext 1 // 90 (0x5A)
-  byte next = 1;
-  if ((delta + requestBufferData.pageSize) > requestBufferData.lengtn) {
-    next = 90; // (0x5A)
-  }
-  ssidListBuffer[2] = next;
-  sum += next;
-  for(int i=0; i < requestBufferData.pageSize; i++) {
-    uint8_t bufferByte = requestBufferData.buffer[delta + i];
-    sum += bufferByte;
-    ssidListBuffer[3 + i] = bufferByte;
-  }
-  ssidListBuffer[3 + requestBufferData.pageSize] = sum;
-  // pageNum increment
-  requestBufferData.pageNum += 1;
-}
-
-void createRequestBufferFrom(String str) {
-  memset(requestBufferData.buffer, 0, sizeof(requestBufferData.buffer));
-  requestBufferData.pageNum = 0;
-  requestBufferData.pageSize = 8;
-  requestBufferData.lengtn = (uint8_t)str.length() + 1;
-  str.getBytes(requestBufferData.buffer, sizeof(requestBufferData.buffer));
+  Serial.println(data.orionName());
+  Serial.println(ssidListBuffer[3]);
+  Serial.println(ssidListBuffer[4]);
+  Serial.println(size16);
+  Serial.println(data.size);
 }
 
 // -------------
@@ -177,7 +125,6 @@ void receiveExec() {
     return;
   }
 
-  String val;
   switch (receiveData.type) {
     case SET_FTPURL:
       receiveData.type = NONE;
@@ -228,6 +175,7 @@ void receiveExec() {
             ssidsData[index].ssid.toCharArray(data.ssid, sizeof(data.ssid));
           }
           EEPROMStoreSave();
+          Serial.println("Save SSID");
         }
       }
       break;
@@ -239,6 +187,7 @@ void receiveExec() {
         }
         data.ssidPass[15] = 0;
         EEPROMStoreSave();
+        Serial.println("Save SSID PASSWORD");
       }
       break;
     case UPDATE_SSIDList:
@@ -288,31 +237,6 @@ void receiveExec() {
         ftpClientA.changeDirByIndex(index);
       }
       break;
-    case GET_MAC_Address:
-      receiveData.type = NONE;
-      val = WiFi.macAddress();
-      createRequestBufferFrom(val);
-      break;
-    case GET_IP_Address:
-      receiveData.type = NONE;
-      val = WiFi.localIP().toString();
-      val.toUpperCase();
-      createRequestBufferFrom(val);
-      break;  
-    case GET_SSID:
-      receiveData.type = NONE;
-      val = String(data.ssid);
-      createRequestBufferFrom(val);
-      break;
-    case GET_FTP_DIR:
-      receiveData.type = NONE;
-      val = ftpClientA.getCurrentFolder();
-      createRequestBufferFrom(val);
-      break;
-    case GET_FTP_LIST_NEXT:
-      receiveData.type = NONE;
-      ftpListPos++;
-      break;
     default:
       break;
   }
@@ -325,22 +249,33 @@ void receiveExec() {
 // -------------
 void requestEvent() {
   setBusy(true);
+  Serial.print("request type : ");
+  Serial.print(receiveData.type);
+  Serial.println();
   String val;
   switch (receiveData.type) {
     case NONE:
-      Wire.write("Empty string"); //12 chars
+      //Wire.write("Empty string"); //12 chars
+      Wire.print("REQUEST NONE");
+      Serial.println(F("Not good, no request type!"));
       break;
     case GET_FILE:
-      Wire.write("ESP-USER"); // send 14 bytes to master
+      //Wire.write(F("ESP-USER")); // send 14 bytes to master
+      Wire.print("ESP-USER");
       receiveData.type = NONE;
       break;
     case GET_SETTINGS:
       Wire.write((byte)45); // send 1 bytes to master
       receiveData.type = NONE;
       break;
+    case GET_SSID:
+      createSsidBuffer();
+      Wire.write(ssidListBuffer, 20);
+      receiveData.type = NONE;
+      break;
     case GET_SSID_PASSWORD:
       data.ssidPass[15] = 0;
-      Wire.write(data.ssidPass);
+      Wire.write((const uint8_t*)data.ssidPass, sizeof(data.ssidPass));
       receiveData.type = NONE;
       break;
     case GET_SSIDList:
@@ -353,20 +288,18 @@ void requestEvent() {
       }
       break;
     case GET_FTP_LIST:
-      createFtpFileDataBufferA(ftpClientA.ftpFiles[ftpListPos]);
-      Wire.write(ssidListBuffer, 14);
-      // if (ftpListPos < ftpClientA.ftpFilesCount) {
-      //   createFtpFileDataBufferA(ftpClientA.ftpFiles[ftpListPos]);
-      //   Wire.write(ssidListBuffer, 14);
-      //   ftpListPos++;
-      // } else {
-      //   ssidListBuffer[0] = ftpListPos;
-      //   ssidListBuffer[1] = 90; //(0x5A)
-      //   Wire.write(ssidListBuffer, 8);
-      //   //Wire.write(0x00);
-      //   //Wire.write(0x5A);
-      //   receiveData.type = NONE;
-      // }
+      if (ftpListPos < ftpClientA.ftpFilesCount) {
+        createFtpFileDataBuffer(ftpClientA.ftpFiles[ftpListPos]);
+        Wire.write(ssidListBuffer, 16);
+        ftpListPos++;
+      } else {
+        ssidListBuffer[0] = ftpListPos;
+        ssidListBuffer[1] = 90; //(0x5A)
+        Wire.write(ssidListBuffer, 8);
+        //Wire.write(0x00);
+        //Wire.write(0x5A);
+        receiveData.type = NONE;
+      }
       break;
     case STATE_SSID:
       updateStatus();
@@ -377,6 +310,19 @@ void requestEvent() {
       }
       receiveData.type = NONE;
       break;
+    case GET_IP_Address:
+      val = WiFi.localIP().toString();
+      val.toUpperCase();
+      //Wire.write(F(val.c_str()));
+      Wire.print(val);
+      receiveData.type = NONE;
+      break;
+    case GET_MAC_Address:
+      val = WiFi.macAddress();
+      //Wire.write(F(val.c_str()));
+      Wire.print(val);
+      receiveData.type = NONE;
+      break;  
     case GET_SSIDList_Is_Ready:
       receiveData.type = NONE;
       Wire.write(SSIDList_Is_Ready);
@@ -391,22 +337,22 @@ void requestEvent() {
       break; 
     case GET_FTPURL:
       data.ftpServerUrl[15] = 0;
-      Wire.write(data.ftpServerUrl);
+      Wire.write((const uint8_t*)data.ftpServerUrl, sizeof(data.ftpServerUrl));
       receiveData.type = NONE;
       break;
     case GET_FTP_Port:
       data.ftpPort[5] = 0;
-      Wire.write(data.ftpPort);
+      Wire.write((const uint8_t*)data.ftpPort, sizeof(data.ftpPort));
       receiveData.type = NONE;
       break;
     case GET_FTP_User:
       data.ftpUser[15] = 0;
-      Wire.write(data.ftpUser);
+      Wire.write((const uint8_t*)data.ftpUser, sizeof(data.ftpUser));
       receiveData.type = NONE;
       break;
     case GET_FTP_Password:
       data.ftpPass[15] = 0;
-      Wire.write(data.ftpPass);
+      Wire.write((const uint8_t*)data.ftpPass, sizeof(data.ftpPass));
       receiveData.type = NONE;
       break;
     case GET_FTP_STATE:
@@ -418,11 +364,7 @@ void requestEvent() {
       }
       break;
     case FILE_DOWNLOAD_GET_NEXT:
-      Wire.write(ftpClientA.fileDownloadData.bytes, (ftpClientA.bytesPageCount + ftpClientA.bytesPropertyCount + 2));
-      break;
-    case GET_NEXT_PAGE_BUFFER:
-      createNextRequestBuffer();
-      Wire.write(ssidListBuffer, (requestBufferData.pageSize + 4));
+      Wire.write(ftpClientA.fileDownloadData.bytes, (ftpClientA.bytesPageCount + 6));
       break;
     default:
       receiveData.type = NONE;

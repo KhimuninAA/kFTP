@@ -2,7 +2,7 @@
 #define FTP_CLIENT_H_
 
 #include <Arduino.h> 
-#include <ESP8266WiFi.h>
+#include <WiFi.h>
 #include "EEPROMStore.h"
 #include "FtpFileData.h"
 
@@ -13,10 +13,6 @@ class FTPClient {
   int16_t ftpClientResponseOldCode;
   String ftpClientResponse;
   int16_t ftpClientResponseCode;
-
-  String ftpClientResponses[5];
-  int ftpClientResponsesCount = 0;
-
   int ftpDataPort;
   bool ftpDataConnected = false;
   enum TransferModeType {ASCII, BINARY};
@@ -34,21 +30,18 @@ class FTPClient {
   bool activeDataConnect();
   bool reconnectDataConnect();
   bool isCodeError();
-  void downloadFileUpdateSum(bool isNext);
-  void showRes();
-  void parseStatus();
+  void downloadFileUpdateSum();
 
   public:
   WiFiClient ftpClient;
   uint16_t timeout = 1000;
   WiFiClient ftpDataClient;
-  uint8_t maxFilesInList = 13;
+  uint8_t maxFilesInList = 16;
 
   FtpFileData ftpFiles[20];
   uint8_t ftpFilesCount = 0;
   UnionFtpFileDownloadData fileDownloadData;
   int bytesPageCount = 8; //16 (ошибка в последних 3-х байтах)
-  int bytesPropertyCount = 4;
 
   FTPClient();
   void ftpConnect();
@@ -62,7 +55,6 @@ class FTPClient {
   bool changeDir(char * dir);
   void changeDirByIndex(int index);
   void changeDirUp();
-  String getCurrentFolder();
 };
 
 #endif

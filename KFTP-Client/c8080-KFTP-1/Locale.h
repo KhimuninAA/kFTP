@@ -26,6 +26,8 @@
 #include "FTPView/FTPViewFunctions.h"
 #include "FtpSettings/FtpSettingsFunctions.h"
 #include "FtpFileLoadView/FtpFileLoadViewFunctions.h"
+#include "NET/ParseHelper/ParseHelperFunctions.h"
+#include "DEBUG/DEBUGFunctions.h"
 
 uint8_t rootTimerTike = 0;
 

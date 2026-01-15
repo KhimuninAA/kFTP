@@ -68,7 +68,7 @@ void ftpFileLoadViewNeedLoad() {
     
     // Обновляем
     updateDiskList();
-    updateRootUI();
+    //updateRootUI();
 }
 
 void ftpFileLoadViewParce() {
@@ -77,7 +77,12 @@ void ftpFileLoadViewParce() {
             push_pop(bc) {
                 de = ESP_I2S_BUFFER;
                 //addr
+                a = *de;
+                l = a;
                 de++;
+                a = *de;
+                h = a;
+                ftpFileLoadCurrentPos = hl;
                 de++;
                 //stopByte
                 a = *de;
@@ -98,8 +103,19 @@ void ftpFileLoadViewParce() {
                     a = 15;
                 }
                 de++;
-                //CHECK SUM
                 b = a; // SAVE PAGE SIZE in B
+                // Вычесть из ftpFileLoadCurrentPos SIZE
+                push_pop(hl) {
+                    hl = ftpFileLoadCurrentPos;
+                    a = l;
+                    a -= b;
+                    if (flag_c) {
+                        h--;
+                    }
+                    l = a;
+                    ftpFileLoadCurrentPos = hl;
+                }
+                //CHECK SUM
                 push_pop(de) {
                     push_pop(bc) {
                         h = 0; //SUM!!!
@@ -121,7 +137,22 @@ void ftpFileLoadViewParce() {
                     } else {
                         // Данные корректны и еще есть - пишем
                         // DATA
-                        hl = diskStartNewFile;
+                        //hl = diskStartNewFile;
+                        push_pop(de) {
+                            hl = ftpFileLoadCurrentPos;
+                            d = h;
+                            e = l;
+                            hl = diskStartNewFile;
+                            a = l;
+                            a += e;
+                            if (flag_c) {
+                                h++;
+                            }
+                            l = a;
+                            a = h;
+                            a += d;
+                            h = a;
+                        }
                         do {
                             a = *de;
                             ordos_wdisk();
@@ -130,7 +161,7 @@ void ftpFileLoadViewParce() {
                             de++;
                             b--;
                         } while ((a = b) > 0);
-                        diskStartNewFile = hl;
+                        //diskStartNewFile = hl;
                     }
                     // Получить следующий пакет
                     a = 0x01;
@@ -160,5 +191,6 @@ uint8_t FtpFileLoadViewEY = 14;
 
 uint16_t FtpFileLoadViewTitlelPos = 0x0B1D; //031B
 uint8_t FtpFileLoadViewTitlel[] = " LOAD ";
+uint16_t ftpFileLoadCurrentPos = 0x0000;
 
 #endif /* FtpFileLoadViewFunctions_h */

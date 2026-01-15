@@ -3,7 +3,7 @@
 
 #include <WString.h>
 #include "EEPROMStore.h"
-#include "WIFI.h"
+#include "WIFIMy.h"
 #include "FTPClient.h"
 
 enum REQUEST_TYPE {
@@ -42,8 +42,6 @@ enum REQUEST_TYPE {
   FTP_DIR_UP, // 31
   FTP_DIR_INDEX, // 32
   GET_FTP_DIR, // 33
-  GET_NEXT_PAGE_BUFFER, // 34
-  GET_FTP_LIST_NEXT, // 35
 };
 
 struct ReceiveData {

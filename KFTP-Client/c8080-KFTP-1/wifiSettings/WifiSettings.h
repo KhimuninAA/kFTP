@@ -29,6 +29,6 @@ uint8_t wifiSettingsIpVal[16] = "-";
 uint16_t wifiSettingsMacValPos = 0x0408;
 uint8_t wifiSettingsMacVal[18] = "-";
 
-uint8_t wifiSettingsEmpty18[18] = "                 ";
+uint8_t wifiSettingsEmpty18[18] = "                ";
 
 #endif /* WifiSettings_h */

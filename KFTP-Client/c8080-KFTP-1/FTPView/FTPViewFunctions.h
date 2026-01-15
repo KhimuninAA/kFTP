@@ -14,27 +14,33 @@ void needUpdateFtpList() {
     i2cWaitingForAccess();
     getFtpList();
     
-    a = ftpDirListCount;
-    if (a >= 16) {
-        a = 16;
-        ftpDirListCount = a;
-    }
+//    a = ftpDirListCount;
+//    if (a >= 16) {
+//        a = 16;
+//        ftpDirListCount = a;
+//    }
     
     a = 0;
     ftpViewCurrentPos = a;
     
-    // clearView();
     ftpViewDataUpdate();
 }
 
 void clearView() {
     push_pop(hl) {
         push_pop(bc) {
-            b = 14;
-            c = 0;
+            b = 15;
+            //
+            a = ftpDirListCount;
+            c = a; //0;
+            // Отнять от B
+            a = b;
+            a -= c;
+            b = a;
+            //--
             do {
                 ftpViewPosCursorC();
-                hl = wifiSettingsEmpty18;
+                hl = ftpViewEmpty16; //wifiSettingsEmpty18;
                 printHLStr();
                 b--;
                 c++;
@@ -43,9 +49,39 @@ void clearView() {
     }
 }
 
+/// Обновить на экране текущий путь на FTP
+void updateCurrentPath() {
+    push_pop(hl, bc) {
+        hl = ftpViewDirPath;
+        b = 25;
+        c = 0; // признак что нужно проставить пробелы
+        do {
+            a = *hl;
+            if (a == 0) {
+                c = 1;
+            }
+            if ((a = c) == 1) {
+                a = ' ';
+                *hl = a;
+            }
+            hl++;
+            b--;
+        } while ((a = b) > 0);
+        // Если был признак простановки пробелов, ставим в конце 0
+        if ((a = c) == 1) {
+            a = 0;
+            *hl = a;
+        }
+        setPosCursor(hl = ftpViewDirPathPos);
+        printHLStr(hl = ftpViewDirPath);
+    }
+}
+
 void ftpViewDataUpdate() {
     push_pop(bc) {
         b = 0;
+        a = ftpDirListCount;
+        c = a;
         do {
             a = 0x00;
             inverceAddress = a;
@@ -64,10 +100,10 @@ void ftpViewDataUpdate() {
             inverceAddress = a;
             
             b++;
-            a = ftpDirListCount;
-            c = a;
-        } while ((a = b) < c);
+            c--;
+        } while ((a = c) > 0);
     }
+    clearView();
 }
 
 void ftpViewShowValueA() {
@@ -142,8 +178,9 @@ void ftpViewKeyA() {
                         } else {
                             ftpChangeDirPos();
                         }
-                        clearView();
+                        getFtpCurrentPath();
                         needUpdateFtpList();
+                        updateCurrentPath();
                     } else {
                         loadSelectFile();
                     }
@@ -153,8 +190,9 @@ void ftpViewKeyA() {
                         loadSelectFile();
                     }
                 } else if (a == 'R') { // R (Refresh)
-                    clearView();
+                    getFtpCurrentPath();
                     needUpdateFtpList();
+                    updateCurrentPath();
                 }
             }
         }

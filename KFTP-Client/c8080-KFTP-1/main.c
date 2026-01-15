@@ -24,7 +24,7 @@ asm{
     //Start
     DB 0x00, 0x01
     //Len
-    DB 0x00, 0x1C
+    DB 0x00, 0x20
     //Reserved
     DB 0x00, 0x00, 0x00, 0x00
 }
@@ -35,20 +35,21 @@ void main(){
     ///
     
     /// WiFI
-    delay5msI2C(); delay5msI2C();
+    //delay5msI2C(); delay5msI2C();
     getSSIDValue();
-    delay5msI2C(); delay5msI2C();
+    //delay5msI2C(); delay5msI2C();
     getSSIDPasswordValue();
     
     /// FTP
-    delay5msI2C(); delay5msI2C();
+    //delay5msI2C(); delay5msI2C();
     getFTPUrl();
-    delay5msI2C(); delay5msI2C();
+    //delay5msI2C(); delay5msI2C();
     getFTPUser();
-    delay5msI2C(); delay5msI2C();
+    //delay5msI2C(); delay5msI2C();
     getFTPPassword();
-    delay5msI2C(); delay5msI2C();
+    //delay5msI2C(); delay5msI2C();
     getFTPPort();
+    getFtpCurrentPath();
     
     ///
     updateRootUI();
@@ -94,11 +95,6 @@ void keyboardEvent() {
                     needOpenFTPSettingsEditView();
                 } else if (a == 0x01) { //F2 Open WiFi settings
                     needOpenWiFiSettingsEditView();
-                } else if (a == 'C') { // Button C
-                    createTestFile();
-                    updateDiskList();
-                    updateRootUI();
-                    showDiskList();
                 }
                 
                 /// View's
@@ -165,6 +161,8 @@ void ftpView() {
     setPosCursor();
     hl = ftpLabel;
     printHLStr();
+    
+    updateCurrentPath();
 }
 
 void diskView() {
@@ -764,4 +762,4 @@ void ftpSettingsEditViewDataUpdate() {
 #include "SSIDListView/SSIDListViewFunctions.h"
 #include "Locale.h"
 
-asm(" savebin \"test.ORD\", 0x00f0, 0x1C0f"); //0xBff
+asm(" savebin \"test.ORD\", 0x00f0, 0x200f"); //0xBff

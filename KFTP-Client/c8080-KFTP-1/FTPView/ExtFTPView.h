@@ -21,5 +21,9 @@ extern uint8_t ftpDirListNext;
 extern uint8_t ftpDirListCount;
 extern uint8_t ftpViewCurrentPos;
 extern uint8_t ftpDirListIsDir;
+extern uint8_t ftpViewEmpty16[16];
+
+extern uint8_t ftpViewDirPath[26];
+extern uint16_t ftpViewDirPathPos;
 
 #endif /* ExtFTPView_h */

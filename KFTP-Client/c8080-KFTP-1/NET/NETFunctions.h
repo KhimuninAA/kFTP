@@ -62,32 +62,15 @@ void getSSIDList() {
 /// Получить текущее имя сети
 void getSSIDValue() {
     push_pop(hl) {
-        push_pop(de) {
-            push_pop(bc) {
-                delay5msI2C();
-                i2cWaitingForAccess();
-                l = 6;
-                h = 0;
-                sendCommand();
-                
-                delay5msI2C();
-                
-                i2cWaitingForAccess();
-                l = 26;
-                readNewInBuffer();
-                
-                de = ESP_I2S_BUFFER;
-                hl = wifiSettingsSsidVal;
-                b = 16;
-                do {
-                    a = *de;
-                    *hl = a;
-                    de++;
-                    hl++;
-                    b--;
-                } while (flag_nz);
-            }
-        }
+        do {
+            delay5msI2C();
+            i2cWaitingForAccess();
+            l = 6;
+            h = 0;
+            sendCommand();
+            //
+            loadStringToHL(hl = wifiSettingsSsidVal);
+        } while ((a = parsePageBufferIsCheck) != 1);
     }
 }
 
@@ -202,69 +185,53 @@ void setSSIDNumberA() {
 /// Получить IP_Address
 void getSSIDIPAddress() {
     push_pop(hl) {
-        push_pop(de) {
-            push_pop(bc) {
-                delay5msI2C();
-                i2cWaitingForAccess();
-                l = 12;
-                h = 0;
-                sendCommand();
-                //
-                delay5msI2C();
-                i2cWaitingForAccess();
-                l = 26;
-                readNewInBuffer();
-                //
-                de = ESP_I2S_BUFFER;
-                hl = wifiSettingsIpVal;
-                b = 16;
-                do {
-                    a = *de;
-                    if(a==0xFF){
-                        a = 0x00;
-                    }
-                    *hl = a;
-                    de++;
-                    hl++;
-                    b--;
-                } while (flag_nz);
-            }
-        }
+        do {
+            delay5msI2C();
+            i2cWaitingForAccess();
+            l = 12;
+            h = 0;
+            sendCommand();
+            //
+            loadStringToHL(hl = wifiSettingsIpVal);
+        } while ((a = parsePageBufferIsCheck) != 1);
     }
 }
 
 /// Получить MAC_Address
 void getSSIDMacAddress() {
     push_pop(hl) {
-        push_pop(de) {
-            push_pop(bc) {
-                delay5msI2C();
-                i2cWaitingForAccess();
-                l = 13;
-                h = 0;
-                sendCommand();
-                //
-                delay5msI2C();
-                i2cWaitingForAccess();
-                l = 26;
-                readNewInBuffer();
-                //
-                de = ESP_I2S_BUFFER;
-                hl = wifiSettingsMacVal;
-                b = 18;
-                do {
-                    a = *de;
-                    if(a==0xFF){
-                        a = 0x00;
-                    }
-                    *hl = a;
-                    de++;
-                    hl++;
-                    b--;
-                } while (flag_nz);
-            }
-        }
+        do {
+            delay5msI2C();
+            i2cWaitingForAccess();
+            l = 13;
+            h = 0;
+            sendCommand();
+            //
+            loadStringToHL(hl = wifiSettingsMacVal);
+        } while ((a = parsePageBufferIsCheck) != 1);
     }
+}
+
+/// Загрузить данные (не больше 255) по адресу HL
+/// вх. [HL] - Куда записывать результат
+void loadStringToHL() {
+    do {
+        push_pop(hl) {
+            // Получить новый буфер
+            delay5msI2C();
+            i2cWaitingForAccess();
+            l = 34; //GET_NEXT_PAGE_BUFFER, // 34
+            h = 0;
+            sendCommand();
+            //
+            delay5msI2C();
+            i2cWaitingForAccess();
+            l = 15;
+            readNewInBuffer(); //ESP_I2S_BUFFER
+        }
+        // Parse ESP_I2S_BUFFER
+        parsePageBuffer();
+    } while ((a = parsePageBufferNext) != 0x5A);
 }
 
 /// Получить STATE_SSID
@@ -640,19 +607,57 @@ void getFtpList() {
     // Получить ответ
     // Ответ ESP_I2S_BUFFER
     // ftpDirList буфер заполнения
-    push_pop(bc) {
-        do {
-            //
+    a = 0;
+    parseFtpListBufferIsCheck = a;
+    do {
+        push_pop(hl) {
+            if ((a = parseFtpListBufferIsCheck) == 1) {
+                delay5msI2C();
+                i2cWaitingForAccess();
+                l = 35; //GET_FTP_LIST_NEXT, // 35
+                h = 0;
+                sendCommand();
+            }
+            
             delay5msI2C();
             i2cWaitingForAccess();
-            l = 26;
+            l = 26; //GET_FTP_LIST
             h = 0;
             sendCommand();
             //
             delay5msI2C();
             i2cWaitingForAccess();
-            l = 26;
+            l = 15;
             readNewInBuffer();
+            
+            parseFtpListBuffer();
+        }
+    } while ((a = ftpDirListNext) != 0x5A);
+    a = ftpDirListCount;
+    a++;
+    ftpDirListCount = a;
+}
+
+/// Получаем список файлов и директорий в текущей папке
+void getFtpListOld() {
+    // Получить ответ
+    // Ответ ESP_I2S_BUFFER
+    // ftpDirList буфер заполнения
+    push_pop(bc) {
+        do {
+            //
+            delay5msI2C();
+            i2cWaitingForAccess();
+            l = 26; //GET_FTP_LIST
+            h = 0;
+            sendCommand();
+            //
+            delay5msI2C();
+            i2cWaitingForAccess();
+            l = 15;
+            readNewInBuffer();
+            
+            
             push_pop(a) {
                 push_pop(de) {
                     push_pop(hl) {
@@ -660,7 +665,6 @@ void getFtpList() {
                     }
                 }
             }
-            //a = ftpDirListNext;
         } while ((a = ftpDirListNext) != 0x5A); // == 1
         
         delay5msI2C();
@@ -715,8 +719,10 @@ void ftpFileDownloadNext() {
             readNewInBuffer();
             
             // Распарсить буфер и пррверить контрольную сумму
-            ftpFileLoadViewParce();
+            //ftpFileLoadViewParce(); Старая реализация
+            ftpFileDownloadParse();
             
+            updateProgress();
         } while ((a = ftpFileLoadViewIsNextData) != 0x5A);
         // 0x5A признак окончания файла
     }
@@ -759,6 +765,21 @@ void ftpChangeDirUp() {
             i2cWaitingForAccess();
             busRecoveryI2C();
         }
+    }
+}
+
+/// Получить текущий путь FTP
+void getFtpCurrentPath() {
+    push_pop(hl) {
+        do {
+            delay5msI2C();
+            i2cWaitingForAccess();
+            l = 33; //GET_FTP_DIR, // 33
+            h = 0;
+            sendCommand();
+            //
+            loadStringToHL(hl = ftpViewDirPath);
+        } while ((a = parsePageBufferIsCheck) != 1);
     }
 }
 

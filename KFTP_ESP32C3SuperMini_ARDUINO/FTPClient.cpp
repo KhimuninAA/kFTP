@@ -11,7 +11,6 @@ void FTPClient::addFolder(int index) {
 }
 
 void FTPClient::ftpConnect() {
-  ftpClient.stop();
   ftpClientResponseOldCode = 0;
   uint16_t numPort = (uint16_t)strtoul(data.ftpPort, NULL, 10);
   if (!ftpClient.connect(data.ftpServerUrl, numPort)) {
@@ -33,27 +32,8 @@ bool FTPClient::getFtpDataConnected() {
   return ftpDataConnected;
 }
 
-void FTPClient::showRes() {
-  String code = ftpClientResponse;
-  code.trim();
-  int cod = atoi(code.c_str());
-  if (cod == 200) {
-    Serial.print(F("Read Status: "));
-    Serial.println(ftpClientResponse);
-    Serial.print(F("Read Status hex: "));
-    for (int i = 0; i < ftpClientResponse.length(); i++) {
-      //if (myString[i] < 16) Serial.print("0"); // Add leading zero if needed
-      //Serial.print((uint8_t)ftpClientResponse[i], HEX);
-      Serial.printf("%02X ", (uint8_t)ftpClientResponse.charAt(i));
-      Serial.print(" "); // Add a space for readability
-    }
-    Serial.println("");
-  }
-}
-
 void FTPClient::getStatus() {
-  ftpClientResponse = ""; //.clear();
-  ftpClientResponsesCount = 0;
+  ftpClientResponse.clear();
 
   unsigned long _m = millis();
   while (!ftpClient.available() && millis() < _m + timeout) delay(1);
@@ -61,38 +41,18 @@ void FTPClient::getStatus() {
   while (ftpClient.available()) {
     char c = ftpClient.read();
     if (c == '\n' || c == '\r') {
-      if (ftpClientResponse.length() > 0) {
-        ftpClientResponses[ftpClientResponsesCount] = ftpClientResponse;
-        ftpClientResponse = "";
-        ftpClientResponsesCount++;
-      }
-      //showRes(); //Debug!!!!
-      //ftpClientResponse.trim();
-      //ftpClientResponseCode = atoi(ftpClientResponse.c_str());
+      ftpClientResponse.trim();
+      ftpClientResponseCode = atoi(ftpClientResponse.c_str());
     } else {
       ftpClientResponse += c;
     }
   }
-
-  parseStatus();
-}
-
-void FTPClient::parseStatus() {
-  for (int i = 0; i < ftpClientResponsesCount; i++) {
-    ftpClientResponse = ftpClientResponses[i];
-    ftpClientResponse.trim();
-    ftpClientResponseCode = atoi(ftpClientResponse.c_str());
-
-    //
-
-    seek227Code();
-
-    if (ftpClientResponseOldCode != ftpClientResponseCode) {
-      ftpClientResponseOldCode = ftpClientResponseCode;
-      Serial.print(F("C "));
-      Serial.println(ftpClientResponse);
-      needActionByChangeCode();
-    }
+  seek227Code();
+  if (ftpClientResponseOldCode != ftpClientResponseCode) {
+    ftpClientResponseOldCode = ftpClientResponseCode;
+    Serial.print(F("C "));
+    Serial.println(ftpClientResponse);
+    needActionByChangeCode();
   }
 }
 
@@ -113,8 +73,6 @@ void FTPClient::seek227Code() {
       hi = hi << 8;
       hi += lo;
       ftpDataPort = hi;
-      Serial.print(F("New port: "));
-      Serial.println(ftpDataPort);
       ftpDataClientConnect();
     }
   }
@@ -133,7 +91,7 @@ void FTPClient::needActionByChangeCode() {
 }
 
 void FTPClient::ftpDataClientConnect() {
-  ftpDataClient.stop(); //disconnect();
+  ftpDataClient.stop();
   if (ftpDataClient.connect(data.ftpServerUrl, ftpDataPort)) { //, timeout
     Serial.println(F("C Data connection established"));
     ftpDataConnected = true;
@@ -275,8 +233,6 @@ void FTPClient::updateFtpList() {
         ftpFiles[ftpFilesCount] = ftpFileData;
         ftpFilesCount++;
       }
-    } else {
-      String empty = ftpDataClient.readStringUntil('\n');
     }
   }
 }
@@ -292,7 +248,7 @@ uint8_t FTPClient::downloadFile(int index) {
 
   strncpy(tempName, ftpFiles[index].name.c_str(), 16);
   fileDownloadData.downloadData.fileSize = (uint16_t)ftpFiles[index].size;
-  fileDownloadData.downloadData.setSize((uint8_t)bytesPropertyCount, (uint8_t)bytesPageCount);
+  fileDownloadData.downloadData.pageSize = bytesPageCount;
 
   ftpClient.print(F("RETR "));
   ftpClient.println(tempName);
@@ -311,30 +267,28 @@ uint8_t FTPClient::downloadFile(int index) {
   return 1;
 }
 
-void FTPClient::downloadFileUpdateSum(bool isNext) {
-  // byte sum = 0;
-  // for(int i = 0; i < bytesPageCount; i++) {
-  //   sum += (byte)fileDownloadData.downloadData.buffer[i];
-  // }
-  // fileDownloadData.downloadData.sum = sum;
+void FTPClient::downloadFileUpdateSum() {
+  byte sum = 0;
+  for(int i = 0; i < bytesPageCount; i++) {
+    sum += (byte)fileDownloadData.downloadData.buffer[i];
+  }
+  fileDownloadData.downloadData.sum = sum;
 
   float progress = 41 * ( ((float)fileDownloadData.downloadData.addr) / ((float)fileDownloadData.downloadData.fileSize) );
-  //fileDownloadData.downloadData.progress = (byte)progress;
-  fileDownloadData.downloadData.setProgress((byte)progress, isNext);
-  fileDownloadData.downloadData.updateSUM();
+  fileDownloadData.downloadData.progress = (byte)progress;
 }
 
 uint8_t FTPClient::downloadFileNext() {
   if (ftpDataClient.available()) {
     ftpDataClient.readBytes(fileDownloadData.downloadData.buffer, bytesPageCount);
     fileDownloadData.downloadData.addr += (uint16_t)bytesPageCount;
-    //fileDownloadData.downloadData.stopByte = 1;
-    downloadFileUpdateSum(true);
+    fileDownloadData.downloadData.stopByte = 1;
+    downloadFileUpdateSum();
     return 1;
   } else {
     memset(fileDownloadData.downloadData.buffer, 0, sizeof(fileDownloadData.downloadData.buffer));
-    //fileDownloadData.downloadData.stopByte = 90; //(0x5A)
-    downloadFileUpdateSum(false);
+    fileDownloadData.downloadData.stopByte = 90; //(0x5A)
+    downloadFileUpdateSum();
     return 0;
   }
 }
@@ -351,7 +305,7 @@ void FTPClient::changeDirUp() {
   Serial.println(length);
   length -= 2; // Remove last "/+0"
   int index = 0;
-  for (int i = length; i >= 0 ; i--) {
+  for (int i = length; i > 0 ; i--) {
     char c = chDir[i];
     if (c == '/') {
       index = i;
@@ -360,34 +314,11 @@ void FTPClient::changeDirUp() {
   }
   Serial.println("index : ");
   Serial.println(index);
-  if (index >= 0) {
+  if (index > 0) {
     index += 1;
     strncpy(tempName, chDir + 0, index);
     tempName[index] = '\0';
     strncpy(chDir, tempName, 127);
   }
   Serial.println(chDir);
-}
-
-String FTPClient::getCurrentFolder() {
-  int maxStrLen = 21; //23;
-  char tempDir[128];
-  int pos = 0;
-  for (int i = 0; i < 128; i++) {
-    char c = chDir[i];
-    if (c < 0x80) {
-      tempDir[pos] = c;
-      pos ++;
-    }
-  }
-  String curDir = String(tempDir);
-  Serial.print("curDir len: ");
-  Serial.println(curDir.length());
-  curDir.toUpperCase();
-  if (curDir.length() > maxStrLen) {
-    int from = curDir.length() - maxStrLen;
-    curDir = ".." + curDir.substring(from);
-  }
-  Serial.println(curDir);
-  return curDir;
 }

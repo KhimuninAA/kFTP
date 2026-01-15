@@ -27,4 +27,7 @@ void i2cWaitingForAccess();
 
 void busRecoveryI2C();
 
+void readSDAState();
+void needAccess();
+
 #endif /* I2CInclude_h */
