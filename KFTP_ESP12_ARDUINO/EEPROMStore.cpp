@@ -27,6 +27,58 @@ void EEPROMStoreLoad() {
   //ssidPass
   EEPROM.get(addr, data.ssidPass);
   addr += sizeof(data.ssidPass);
+  //ftpHomeDir
+  EEPROM.get(addr, data.ftpHomeDir);
+  addr += sizeof(data.ftpHomeDir);
+
+  EEPROMStoreEmptyFix();
+}
+
+void EEPROMStoreEmptyFix() {
+  uint8_t byte = 0;
+  //-- ftpHomeDir
+  byte = data.ftpHomeDir[0];
+  if (byte == 0xFF) {
+    data.ftpHomeDir[0] = '/';
+    data.ftpHomeDir[1] = 0;
+  }
+  //-- ftpServerUrl
+  byte = data.ftpServerUrl[0];
+  if (byte == 0xFF) {
+    data.ftpServerUrl[0] = '-';
+    data.ftpServerUrl[1] = 0;
+  }
+  //-- ftpPort
+  byte = data.ftpPort[0];
+  if (byte == 0xFF) {
+    data.ftpPort[0] = '2';
+    data.ftpPort[1] = '1';
+    data.ftpPort[2] = 0;
+  }
+  //-- ftpUser
+  byte = data.ftpUser[0];
+  if (byte == 0xFF) {
+    data.ftpUser[0] = '-';
+    data.ftpUser[1] = 0;
+  }
+  //-- ftpPass
+  byte = data.ftpPass[0];
+  if (byte == 0xFF) {
+    data.ftpPass[0] = '-';
+    data.ftpPass[1] = 0;
+  }
+  //-- ssid
+  byte = data.ssid[0];
+  if (byte == 0xFF) {
+    data.ssid[0] = '-';
+    data.ssid[1] = 0;
+  }
+  //-- ssidPass
+  byte = data.ssidPass[0];
+  if (byte == 0xFF) {
+    data.ssidPass[0] = '-';
+    data.ssidPass[1] = 0;
+  }
 }
 
 void EEPROMStoreSave() {
@@ -49,7 +101,9 @@ void EEPROMStoreSave() {
   //ssidPass
   EEPROM.put(addr, data.ssidPass);
   addr += sizeof(data.ssidPass);
-
+  //ftpHomeDir
+  EEPROM.put(addr, data.ftpHomeDir);
+  addr += sizeof(data.ftpHomeDir);
   //SAVE!
   EEPROM.commit();
 }

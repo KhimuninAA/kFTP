@@ -245,7 +245,7 @@ bool FTPClient::changeDir(char * dir) {
   }
 }
 
-void FTPClient::updateFtpList() {
+void FTPClient::updateFtpList(uint8_t fileCount) {
   // Очистить список и интедкс
 
   if (activeConnect() == false) {
@@ -266,8 +266,12 @@ void FTPClient::updateFtpList() {
   unsigned long _m = millis();
   while( !ftpDataClient.available() && millis() < _m + timeout) delay(1);
 
+  uint8_t maxFileCount = maxFilesInList;
+  if (fileCount > maxFilesInList) {
+    maxFileCount = fileCount;
+  }
   while(ftpDataClient.available()) {
-    if( ftpFilesCount < maxFilesInList ) {
+    if( ftpFilesCount < maxFileCount ) {
       String fileDataStr = ftpDataClient.readStringUntil('\n');
       FtpFileData ftpFileData = FtpFileDataHelper::parse(fileDataStr);
       if (ftpFileData.isHidden == false) {
@@ -318,7 +322,7 @@ void FTPClient::downloadFileUpdateSum(bool isNext) {
   // }
   // fileDownloadData.downloadData.sum = sum;
 
-  float progress = 41 * ( ((float)fileDownloadData.downloadData.addr) / ((float)fileDownloadData.downloadData.fileSize) );
+  float progress = (progressCount + 1) * ( ((float)fileDownloadData.downloadData.addr) / ((float)fileDownloadData.downloadData.fileSize) );
   //fileDownloadData.downloadData.progress = (byte)progress;
   fileDownloadData.downloadData.setProgress((byte)progress, isNext);
   fileDownloadData.downloadData.updateSUM();
@@ -340,6 +344,11 @@ uint8_t FTPClient::downloadFileNext() {
 }
 
 void FTPClient::changeDirByIndex(int index) {
+  int chDirLength = strlen(chDir);
+  int addDirLength = ftpFiles[index].name.length();
+  if ((chDirLength + addDirLength + 1) > 128) {
+    return;
+  }
   strncpy(tempName, ftpFiles[index].name.c_str(), 23);
   strcat(chDir, tempName);
   strcat(chDir, "/");
@@ -370,7 +379,7 @@ void FTPClient::changeDirUp() {
 }
 
 String FTPClient::getCurrentFolder() {
-  int maxStrLen = 21; //23;
+  int maxStrLen = 16; //21; //23;
   char tempDir[128];
   int pos = 0;
   for (int i = 0; i < 128; i++) {
@@ -385,7 +394,43 @@ String FTPClient::getCurrentFolder() {
   Serial.println(curDir.length());
   curDir.toUpperCase();
   if (curDir.length() > maxStrLen) {
-    int from = curDir.length() - maxStrLen;
+    int from = curDir.length() - maxStrLen + 2; //(2 = "..")
+    curDir = ".." + curDir.substring(from);
+  }
+  Serial.println(curDir);
+  return curDir;
+}
+
+String FTPClient::getCurrentFolderNew() {
+  int maxStrLen = 16; //21; //23;
+  char tempDir[128];
+  int pos = 0;
+  for (int i = 0; i < 128; i++) {
+    char c = chDir[i];
+    if (c < 0x80) {
+      tempDir[pos] = c;
+      pos ++;
+    } else if (c == 0xD0) {
+      i++;
+      uint8_t utC = chDir[i];
+      utC -= 0x10;
+      tempDir[pos] = utC;
+      pos ++;
+    } else if (c == 0xD1) {
+      i++;
+      uint8_t utC = chDir[i];
+      utC += 0x60;
+      tempDir[pos] = utC;
+      pos ++;
+    }
+  }
+  Serial.println(tempDir);
+  String curDir = String(tempDir);
+  //Serial.print("curDir len: ");
+  //Serial.println(curDir.length());
+  //curDir.toUpperCase();
+  if (curDir.length() > maxStrLen) {
+    int from = curDir.length() - maxStrLen + 2; //(2 = "..")
     curDir = ".." + curDir.substring(from);
   }
   Serial.println(curDir);

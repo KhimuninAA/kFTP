@@ -7,6 +7,7 @@ SSIDData ssidsData[MAX_ENTRIES];
 bool WIFIflag = false;
 uint8_t WIFIBuffer[256];
 uint8_t SSIDListPos = 0;
+uint8_t SSIDListCount = 0;
 uint8_t SSIDList_Is_Ready = 0;
 
 void WIFIInit() {
@@ -74,7 +75,7 @@ void listSSID() {
         dataCount++;
       }
     }
-
+    SSIDListCount = dataCount;
     // for (int i = 0; i < MAX_ENTRIES; i++) {
     //   if (ssidsData[i].ssidCh[0] != 0) {
     //     Serial.println(ssidsData[i].ssidCh);

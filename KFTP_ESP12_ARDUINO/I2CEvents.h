@@ -44,6 +44,21 @@ enum REQUEST_TYPE {
   GET_FTP_DIR, // 33
   GET_NEXT_PAGE_BUFFER, // 34
   GET_FTP_LIST_NEXT, // 35
+  GET_FTP_LIST_NEXT_NEW, // 36
+  GET_FTP_LIST_NEW, // 37
+  GET_FTP_DIR_NEW, // 38
+  GET_FTPURL_NEW, // 39
+  GET_SSID_PASSWORD_NEW, // 40
+  GET_FTP_HOMEDIR_NEW, // 41
+  GET_SSID_NEW_LIST_NEXT, // 42
+  GET_FTP_Port_NEW, // 43
+  GET_FTP_User_NEW, // 44
+  GET_FTP_Password_NEW, // 45
+  GET_SSID_NEW_LIST_Next_Inc, // 46
+  GET_NEXT_PAGE_BUFFER_NEW, // 47
+  GET_NEXT_PAGE_BUFFER_NEW_INC, // 48
+  SET_STR16_FOR_KEY_PAGE, // 49
+  GET_STR16_FOR_KEY_PAGE_STATE, // 50
 };
 
 struct ReceiveData {
@@ -52,11 +67,30 @@ struct ReceiveData {
   int count;
 };
 
+enum Str16DataAction_TYPE {
+  Action_NONE = -1,
+  Action_SET_SSID_PASSWORD = 0, // 0
+  Action_SET_FTP_PASSWORD, // 1
+  Action_SET_FTP_HomeDir, // 2
+  Action_SET_FTP_ftpUser, // 3
+  Action_SET_FTP_ServerUrl, // 4
+  Action_SET_FTP_Port, // 5
+};
+
+struct ReceiveStr16Data {
+  int key;
+  uint8_t next;
+  char buffer[16];
+  //0x01 - Error; 0xA5 - Ok; 0x03 - InternalError;
+  uint8_t state;
+};
+
 extern EEPROMData data;
 extern bool WIFIflag;
 extern SSIDData ssidsData[MAX_ENTRIES];
 extern char WIFIBuffer[256];
 extern uint8_t SSIDListPos;
+extern uint8_t SSIDListCount;
 extern uint8_t SSIDList_Is_Ready;
 extern bool receiveOn;
 extern bool i2cBusy;
@@ -68,6 +102,11 @@ void receiveEvent(int howMany);
 void requestEvent();
 void receiveExec();
 
+void createSsidNewNexBuffer();
+void createRequestBufferFrom(String str);
+
 void setBusy(bool busy);
+
+void str16DataExec();
 
 #endif

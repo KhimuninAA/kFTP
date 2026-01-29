@@ -7,6 +7,7 @@ FtpFileData FtpFileDataHelper::parse(String src) {
   parseFtpFileData.data = "";
   parseFtpFileData.size = 0;
   parseFtpFileData.isHidden = true;
+  parseFtpFileData.date = "";
 
   parseL(src, &parseFtpFileData);
 
@@ -51,6 +52,8 @@ void FtpFileDataHelper::paramValue(String src, FtpFileData *ftpFileData) {
           ftpFileData->isDir = false;
         }
       }
+    } else if (param == "modify") {
+      ftpFileData->date = val;
     }
   }
 }

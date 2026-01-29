@@ -69,6 +69,7 @@ struct FtpFileData {
     String data;
     int size;
     bool isHidden;
+    String date;
 
     String orionName() {
       //char  en_a_Char = 0x61;

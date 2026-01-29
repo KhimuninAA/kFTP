@@ -22,8 +22,8 @@ void setup() {
   Wire.pins(D2, D1);
   Wire.begin(0x12); 
 
-  Wire.setClockStretchLimit(1500);
-  Wire.setClock(10000L);
+  //Wire.setClockStretchLimit(1500);
+  //Wire.setClock(100000L); //10000L 400000L 100000L
 
   //Wire.setClockStretchLimit(1500);
   //Wire.setClock(40000L); 

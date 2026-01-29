@@ -22,6 +22,7 @@ class FTPClient {
   enum TransferModeType {ASCII, BINARY};
   char chDir[128] = "/ORION/";
   char tempName[128];
+  float progressCount = 40;
 
   void seek227Code();
   void needActionByChangeCode();
@@ -55,7 +56,7 @@ class FTPClient {
   void ftpQuit();
   void getStatus();
   bool getFtpDataConnected();
-  void updateFtpList();
+  void updateFtpList(uint8_t fileCount);
   void addFolder(int index);
   uint8_t downloadFile(int index);
   uint8_t downloadFileNext();
@@ -63,6 +64,7 @@ class FTPClient {
   void changeDirByIndex(int index);
   void changeDirUp();
   String getCurrentFolder();
+  String getCurrentFolderNew();
 };
 
 #endif

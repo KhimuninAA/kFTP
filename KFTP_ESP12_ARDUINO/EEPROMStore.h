@@ -8,10 +8,12 @@ struct EEPROMData {
   char ftpPass[16];
   char ssid[16];
   char ssidPass[16];
+  char ftpHomeDir[16];
 };
 
 void EEPROMStoreInit();
 void EEPROMStoreLoad();
 void EEPROMStoreSave();
+void EEPROMStoreEmptyFix();
 
 #endif
