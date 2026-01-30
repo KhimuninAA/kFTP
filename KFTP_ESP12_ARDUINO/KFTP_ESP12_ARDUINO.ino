@@ -37,6 +37,7 @@ void setup() {
   EEPROMStoreInit();
 
   EEPROMStoreLoad();
+  ftpClientA.goToHomeDir();
   //listSSID();
   setBusy(false);
 }

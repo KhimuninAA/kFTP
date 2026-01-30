@@ -65,6 +65,7 @@ class FTPClient {
   void changeDirUp();
   String getCurrentFolder();
   String getCurrentFolderNew();
+  void goToHomeDir();
 };
 
 #endif

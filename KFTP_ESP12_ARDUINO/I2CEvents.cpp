@@ -122,6 +122,35 @@ void str16DataExec() {
   //str16Data.state = 0;
 }
 
+/// Get All State
+/// 1 byte : Test = 0x55
+/// 2 byre : All State : WIFIConnect = 0x01; FtpConnect = 0x02;
+/// 3 byte : Reserved
+/// 4 byte : SUM
+void createAllStateBuffer() {
+  memset(ssidNexBuffer, 0, sizeof(ssidNexBuffer));
+  uint8_t sum = 0;
+  // -- Test byte 0x55
+  ssidNexBuffer[0] = 0x55;
+  sum += ssidNexBuffer[0];
+  // -- All State
+  uint8_t all_state = 0x00;
+  if(WIFIflag==true){
+    all_state |= 0x01; // 1 bit
+  }
+  if (ftpClientA.getFtpDataConnected() == true) {
+    all_state |= 0x02; // 2 bit
+  }
+  ssidNexBuffer[1] = all_state;
+  sum += ssidNexBuffer[1];
+  // -- Reserved
+  ssidNexBuffer[2] = 0x00;
+  sum += ssidNexBuffer[2];
+  // -- SUM
+  ssidNexBuffer[3] = sum;
+
+}
+
 void createSsidNewNexBuffer() {
   memset(ssidNexBuffer, 0, sizeof(ssidNexBuffer));
   uint8_t sum = 0;
@@ -657,6 +686,10 @@ void receiveExec() {
         str16Data.state = 0x03;
       }
       break;
+    case SET_FTP_GO_HOME_DIR:
+      receiveData.type = NONE;
+      ftpClientA.goToHomeDir();
+      break;
     default:
       break;
   }
@@ -786,6 +819,11 @@ void requestEvent() {
       createstr16DataState();
       Wire.write(ssidNexBuffer, 4);
       break;  
+    case GET_ALL_STATE:
+      receiveData.type = NONE;
+      createAllStateBuffer();
+      Wire.write(ssidNexBuffer, 5);
+      break;
     default:
       receiveData.type = NONE;
       break;

@@ -436,3 +436,8 @@ String FTPClient::getCurrentFolderNew() {
   Serial.println(curDir);
   return curDir;
 }
+
+void FTPClient::goToHomeDir() {
+  int homeDirLength = strlen(data.ftpHomeDir);
+  strncpy(chDir, data.ftpHomeDir, homeDirLength);
+}
