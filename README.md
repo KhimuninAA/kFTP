@@ -55,7 +55,7 @@ FTP клиент, для компьютера Орион-128.
 ### Демонстрация работы
 
 <video width="640" height="320" controls>
-    <source src="img/IMG_0883.webm" type="video/webm">
+    <source src="https://github.com/user-attachments/assets/bbe6fc58-cbf9-4ee7-ab2a-bfb076342225" type="video/webm">
 </video>
 
 ## Общий вид приложения kFTP (Старое)
