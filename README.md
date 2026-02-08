@@ -26,9 +26,9 @@ FTP клиент, для компьютера Орион-128.
 
 ### Схема
 
-<img align="center" width=400 src="img/KFTP-ESP12.png" />
+<img align="center" width=600 src="img/KFTP-ESP12_2.png" />
 
-## Добавлено новое приложение
+## Добавлено новое приложение kFTP-C
 - Использует VBOX
 - Поддерживает UFT8 для русского языка
 - Доддержка заглавных и прописных букв
@@ -52,7 +52,7 @@ FTP клиент, для компьютера Орион-128.
 
 <img align="center" width=400 src="img/kFTP-C_Download_1.jpg" />
 
-## Общий вид приложения
+## Общий вид приложения kFTP (Старое)
 
 <img align="center" width=400 src="img/kFRP.jpg" />
 
