@@ -69,27 +69,31 @@ void LoadViewShowTitleHL() {
     }
 }
 
+uint8_t LoadViewShowProgressOld = 0xFF;
 void LoadViewShowProgressA() {
     push_pop(bc) {
         c = a; //Save
-        //
-        // X
-        a = LoadViewX;
-        a += 1;
-        myCharPosX = a;
-        // Y
-        a = LoadViewY;
-        a += 2;
-        myCharPosY = a;
-        b = 0;
-        do {
-            if ((a = b) < c) {
-                printMyChatA(a = 0xDB);
-            } else {
-                printMyChatA(a = 0xB0); //0xB0 0xB1 0xB2
-            }
-            b++;
-        } while ((a = b) < 40);
+        if ((a = LoadViewShowProgressOld) != c) {
+            a = c;
+            LoadViewShowProgressOld = a;
+            // X
+            a = LoadViewX;
+            a += 1;
+            myCharPosX = a;
+            // Y
+            a = LoadViewY;
+            a += 2;
+            myCharPosY = a;
+            b = 0;
+            do {
+                if ((a = b) < c) {
+                    printMyChatA(a = 0xDB);
+                } else {
+                    printMyChatA(a = 0xB0); //0xB0 0xB1 0xB2
+                }
+                b++;
+            } while ((a = b) < 40);
+        }
     }
 }
 

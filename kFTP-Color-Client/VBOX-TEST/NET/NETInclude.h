@@ -10,6 +10,11 @@
 
 extern uint16_t sendHLPoint;
 extern uint8_t sendHLActionKey;
+extern uint8_t NetIsLock;
+extern uint8_t NetLoopCount;
+/// 0 - нет ошибки;
+/// 1 - превышено кол-во попыток
+extern uint8_t NetError;
 
 /// Сменить директорию
 /// A - позиция
@@ -89,6 +94,8 @@ void setFtpUser();
 void setFtpServerUrl();
 /// Установить FTP Port
 void setFtpPort();
+/// Перейти на домашную папку
+void setFtpGoToHomeDir();
 
 ///---------------
 ///--     Connect       ---
@@ -98,5 +105,7 @@ void setFtpPort();
 void needSsidConnect();
 /// Подключиться в FTP
 void needFtpConnect();
+/// Получить все статусы
+void getAllStatus();
 
 #endif /* NETInclude_h */

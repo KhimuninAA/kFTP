@@ -24,6 +24,8 @@ void ThreadsNetNeedUpdateWiFiValue();
 void ThreadsNetPasswordUpdate();
 void ThreadsNetSsidUpdateA();
 
+void ThreadsNetSetWiFiStateA();
+
 void ThreadsNetNeedUpdateFtpData();
 void ThreadsNetNeedUpdateFtpValue();
 
@@ -32,6 +34,9 @@ void ThreadsNetFtpPasswordUpdate();
 void ThreadsNetFtpUserUpdate();
 void ThreadsNetFtpServerUrlUpdate();
 void ThreadsNetFtpPortUpdate();
+
+void ThreadsNetSetFtpStateA();
+void ThreadsNetFtpGoToHomeDir();
 
 void delay50ms();
 

@@ -95,6 +95,7 @@ extern uint8_t SSIDListPos;
 extern uint8_t SSIDListCount;
 extern uint8_t SSIDList_Is_Ready;
 extern bool receiveOn;
+extern bool receiveBufferOn;
 extern bool i2cBusy;
 extern FTPClient ftpClientA;
 extern uint8_t ftpFilesCount;
@@ -103,6 +104,7 @@ extern FtpFileData ftpFiles[20];
 void receiveEvent(int howMany);
 void requestEvent();
 void receiveExec();
+void receiveBufferParser();
 
 void createSsidNewNexBuffer();
 void createRequestBufferFrom(String str);

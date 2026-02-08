@@ -29,8 +29,9 @@ void ThreadsTick() {
 }
 
 void ThreadsNetUpdateState() {
-    getFtpState();
-    getWifiState();
+    getAllStatus();
+    //getFtpState();
+    //getWifiState();
     ThreadsNetNeedStateChange();
 }
 
@@ -74,11 +75,31 @@ void ThreadsNetSsidUpdateA() {
     getSSIDValue();
 }
 
+void ThreadsNetSetWiFiStateA() {
+    push_pop(bc) {
+        a &= 0x01;
+        b = a;
+        // Old Value
+        a = WifiStateViewSSIDIsConnected;
+        c = a;
+        // --
+        a = b;
+        WifiStateViewSSIDIsConnected = a;
+        if(a != c){
+            a = 0x01;
+            WiFiNetStateChange = a;
+        }
+    }
+}
+
 // ----------------------------------
 // ------------ Ftp  ----------------
 // ----------------------------------
 void ThreadsNetNeedUpdateFtpData() {
     FtpStateViewShowValue();
+    // Update ftp dir
+    getFtpCurrentPathNew();
+    FtpViewShowPath();
     //
     CurrentViewDiskOrFtpViewByIdA(a = CurrentViewId);
     if (a == 1) {
@@ -127,6 +148,37 @@ void ThreadsNetFtpPortUpdate() {
     getFTPPort();
 }
 
+void ThreadsNetSetFtpStateA() {
+    push_pop(bc) {
+        a &= 0x01;
+        b = a;
+        // Old Value
+        a = FtpStateViewStatus;
+        c = a;
+        // --
+        a = b;
+        FtpStateViewStatus = a;
+        if(a != c){
+            a = 0x01;
+            FtpNetStateChange = a;
+        }
+    }
+}
+
+void ThreadsNetFtpGoToHomeDir() {
+    setFtpGoToHomeDir();
+    getFtpCurrentPathNew();
+    FtpViewShowPath();
+    if ((a = FtpStateViewStatus) == 1) {
+        updateFtpList();
+        getNetFtpListNew();
+    } else {
+        FtpViewEmptyList();
+    }
+    FtpViewListUpdateUI();
+}
+
+
 void NetUpdateData() {
     ThreadsNetNeedUpdateFtpValue();
     ThreadsNetNeedUpdateWiFiValue();
@@ -155,7 +207,7 @@ void ThreadsTickCountNext() {
             a++;
             ThreadsTickCount = a;
             //-- TickSubCount = max
-            hl = 0x300;
+            hl = 0x800; //0x1000; //0x300;
         } else {
             hl--;
         }

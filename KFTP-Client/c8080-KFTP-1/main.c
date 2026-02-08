@@ -762,4 +762,4 @@ void ftpSettingsEditViewDataUpdate() {
 #include "SSIDListView/SSIDListViewFunctions.h"
 #include "Locale.h"
 
-asm(" savebin \"test.ORD\", 0x00f0, 0x200f"); //0xBff
+asm(" savebin \"test.ORD\", 0x00f0, 0x2010"); //0xBff

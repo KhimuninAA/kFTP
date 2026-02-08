@@ -29,6 +29,8 @@ extern uint16_t SsidListNextParserPoint;
 extern uint8_t sendHLToAParserIsOk;
 extern uint8_t sendHLToAParserCheckSumState;
 
+extern uint8_t allStatusParserCheckSumState;
+
 /// Парсинг буфера от  API метода GET_NEXT_PAGE_BUFFER
 /// вх. [HL] - Куда записывать результат
 /// ESP_I2S_BUFFER - буфер где лежат полученные данные
@@ -62,5 +64,8 @@ void SsidListNextParserCheckSum();
 
 void sendHLToAParser();
 void sendHLToAParserCheckSum();
+
+void getAllStatusParser();
+void getAllStatusParserCheckSum();
 
 #endif /* ParseHelperInclude_h */

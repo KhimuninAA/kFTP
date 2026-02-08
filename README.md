@@ -28,6 +28,30 @@ FTP клиент, для компьютера Орион-128.
 
 <img align="center" width=400 src="img/KFTP-ESP12.png" />
 
+## Добавлено новое приложение
+- Использует VBOX
+- Поддерживает UFT8 для русского языка
+- Доддержка заглавных и прописных букв
+- Добавлена поддержка домашней директории
+- Повышена скорость скачивания более чам в 5 раз
+- Повышена стабильность работы
+- Добавлена маска для паролей
+- Добавлены горячие клавиши для удобства работы
+
+<img align="center" width=400 src="img/kFTP-C.jpg" />
+
+### Настройка WiFi
+
+<img align="center" width=400 src="img/kFTP-C_WiFi_Settings_1.jpg" />
+
+### Настройка FTP
+
+<img align="center" width=400 src="img/kFTP-C_FTP_Settings_1.jpg" />
+
+### Скачивание файла
+
+<img align="center" width=400 src="img/kFTP-C_Download_1.jpg" />
+
 ## Общий вид приложения
 
 <img align="center" width=400 src="img/kFRP.jpg" />

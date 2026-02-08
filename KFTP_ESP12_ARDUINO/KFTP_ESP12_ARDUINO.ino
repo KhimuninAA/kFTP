@@ -42,10 +42,15 @@ void setup() {
   setBusy(false);
 }
 
+bool receiveBufferOn = false;
 bool receiveOn = false;
 bool i2cBusy = false;
 
 void loop() {
+  if (receiveBufferOn == true) {
+    receiveBufferOn = false;
+    receiveBufferParser();
+  }
   if (receiveOn == true) {
     receiveOn = false;
     receiveExec();

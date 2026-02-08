@@ -381,6 +381,8 @@ void FtpViewKeyA() {
                     if (a == 0) { // Проверим что это файл
                         FtpViewLoadFile();
                     }
+                } else if ((a = l) == 'H') { // Перейти в домашную папку
+                    ThreadsNetFtpGoToHomeDir();
                 }
             }
         }

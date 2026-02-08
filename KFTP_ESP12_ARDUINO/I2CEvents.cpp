@@ -451,7 +451,46 @@ void createRequestBufferFrom(String str) {
 // -------------
 // -= RECEIVE =-
 // -------------
+uint8_t receiveBuffer[32];
+int receiveCount = 0;
 void receiveEvent(int howMany) {
+  setBusy(true);
+  receiveCount = 0;
+  while (0 <Wire.available()) {
+    uint8_t receiveByte = Wire.read();
+    receiveBuffer[receiveCount] = receiveByte;
+    receiveCount ++;
+  }
+  receiveBufferOn = true;
+}
+
+void receiveBufferParser() {
+  if (receiveCount == 0) {
+    receiveData.type = NONE;
+    receiveData.count = 0;
+    setBusy(false);
+  } else {
+    int count = 0;
+    for(int i = 0; i < receiveCount; i++) {
+      if (count == 0) {
+        int requestVal = receiveBuffer[i];
+        Serial.print(F("Received request -> "));
+        Serial.print(requestVal);
+        receiveData.type = static_cast<REQUEST_TYPE>(requestVal);
+        Serial.println();
+      } else {
+        char c = receiveBuffer[i]; 
+        receiveData.buffer[count - 1] = c;
+      }
+      count++;
+    }
+    receiveData.buffer[count + 1] = '\0';
+    receiveData.count = count;
+    receiveOn = true;
+  }
+}
+
+void receiveEventOld(int howMany) {
   setBusy(true);
   if (howMany == 0) {
     receiveData.type = NONE;
@@ -465,11 +504,20 @@ void receiveEvent(int howMany) {
         Serial.print(requestVal);
         receiveData.type = static_cast<REQUEST_TYPE>(requestVal);
         Serial.println();
+        Serial.print("Count: ");
+        Serial.print(count);
+        Serial.print("howMany: ");
+        Serial.println(howMany);
       } else {
+        Serial.print("Else Count: ");
+        Serial.println(count);
         char c = Wire.read(); 
         receiveData.buffer[count - 1] = c;
       }
       count++;
+      if (count > howMany) {
+        break;
+      }
     }
     receiveData.buffer[count + 1] = '\0';
     receiveData.count = count;

@@ -72,6 +72,14 @@ void updateFtpList() {
 
 /// Получаем список файлов и директорий в текущей папке
 void getNetFtpListNew() {
+    //-- Lock
+    if ((a = NetIsLock) == 1) {
+        return;
+    }
+    a = 1;
+    NetIsLock = a;
+    //--
+    a = 0;
     parseFtpListBufferIsCheck = a;
     do {
         push_pop(hl) {
@@ -100,6 +108,10 @@ void getNetFtpListNew() {
     a = FtpViewFilesListCount;
     a++;
     FtpViewFilesListCount = a;
+    //-- Lock
+    a = 0;
+    NetIsLock = a;
+    //--
 }
 
 /// Получить текущий путь FTP
@@ -190,32 +202,52 @@ void ftpFileDownloadNext() {
     push_pop(hl) {
         a = 0x01;
         parseFtpFileLoadViewCheckSumState = a;
+        a = 0;
+        NetError = a;
+        a = 10;
+        NetLoopCount = a;
         do {
             // Если контрольная сумма верна просим следующий буфер
             if ((a = parseFtpFileLoadViewCheckSumState) == 0x01) {
-                //delay5msI2C();
+                a = 10;
+                NetLoopCount = a;
+                //--
                 i2cWaitingForAccess();
                 l = 29;
                 h = 0;
                 sendCommand();
+            } else {
+                a = NetLoopCount;
+                a--;
+                NetLoopCount = a;
+                if (a == 0) {
+                    a = 1;
+                    NetError = a;
+                }
             }
             
-            // Получить буфер
-            //delay5msI2C();
-            i2cWaitingForAccess();
-            l = 30;
-            h = 0;
-            sendCommand();
-            //
-            //delay5msI2C();
-            i2cWaitingForAccess();
-            l = 15;
-            readNewInBuffer();
-            
-            // Распарсить буфер и пррверить контрольную сумму
-            ftpFileDownloadParse();
-            
-            LoadViewShowProgressA(a = LoadViewProgress);
+            if ((a = NetError) == 0) {
+                // Получить буфер
+                //i2cWaitingForAccess();
+                l = 30;
+                h = 0;
+                sendCommand();
+                //
+                //delay5msI2C();
+                //i2cWaitingForAccess();
+                l = 15;
+                readNewInBuffer();
+                
+                // Распарсить буфер и пррверить контрольную сумму
+                ftpFileDownloadParse();
+                if ((a = parseFtpFileLoadViewCheckSumState) == 0x01) {
+                    LoadViewShowProgressA(a = LoadViewProgress);
+                }
+            } else {
+                // Error!!!!
+                a = 0x5A;
+                parseFtpFileLoadViewIsNextData = a;
+            }
         } while ((a = parseFtpFileLoadViewIsNextData) != 0x5A);
     }
 }
@@ -630,6 +662,58 @@ void setFtpPort() {
         sendHLToA(a = 5); // Action_SET_FTP_Port, // 5
     }
 }
+
+/// Получить все статусы
+void getAllStatus() {
+    //-- Lock
+    if ((a = NetIsLock) == 1) {
+        return;
+    }
+    a = 1;
+    NetIsLock = a;
+    //--
+    push_pop(hl) {
+        a = 10;
+        NetLoopCount = a;
+        do {
+            l = 51; //GET_ALL_STATE, // 51
+            h = 0;
+            sendCommand();
+            //
+            l = 5;
+            readNewInBuffer();
+            getAllStatusParser();
+            //-- MAX LOOP
+            a = NetLoopCount;
+            a--;
+            NetLoopCount = a;
+            if (a == 0) {
+                a = 1;
+                allStatusParserCheckSumState = a;
+            }
+            //--
+        } while ((a = allStatusParserCheckSumState) == 0);
+    }
+    //-- Lock
+    a = 0;
+    NetIsLock = a;
+    //--
+}
+
+/// Перейти на домашную папку
+void setFtpGoToHomeDir() {
+    push_pop(hl) {
+        l = 52; //SET_FTP_GO_HOME_DIR, // 52
+        h = 0;
+        sendCommand();
+    }
+}
+
+uint8_t NetIsLock = 0;
+/// 0 - нет ошибки;
+/// 1 - превышено кол-во попыток
+uint8_t NetError = 0;
+uint8_t NetLoopCount = 0;
 
 uint16_t sendHLPoint = 0x0000;
 uint8_t sendHLActionKey = 0;

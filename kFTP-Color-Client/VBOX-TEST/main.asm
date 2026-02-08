@@ -117,7 +117,7 @@ appname:
 
     DB 0x00, 0x01
 
-    DB 0x00, 0x30
+    DB 0x00, 0x32
 
     DB 0x00, 0x00, 0x00, 0x00
 
@@ -145,181 +145,185 @@ mainstart:
 	ld hl, 0
 ; 53     setPosCursor();
 	call setposcursor
-; 54     
-; 55     initI2C();
+; 54     a = 0;
+	ld a, 0
+; 55     NetIsLock = a;
+	ld (netislock), a
+; 56     
+; 57     initI2C();
 	call initi2c
-; 56     vboxClearCash();
+; 58     vboxClearCash();
 	call vboxclearcash
-; 57     
-; 58     HelpViewShow();
+; 59     
+; 60     HelpViewShow();
 	call helpviewshow
-; 59     FtpStateViewShow();
+; 61     FtpStateViewShow();
 	call ftpstateviewshow
-; 60     WifiStateViewShow();
+; 62     WifiStateViewShow();
 	call wifistateviewshow
-; 61     FtpViewShow();
+; 63     FtpViewShow();
 	call ftpviewshow
-; 62     DiskViewShow();
+; 64     DiskViewShow();
 	call diskviewshow
-; 63     
-; 64     CurrentViewChangeIdA(a = FtpViewId);
+; 65     
+; 66     CurrentViewChangeIdA(a = FtpViewId);
 	ld a, 2
 	call currentviewchangeida
-; 65     
-; 66     #ifdef _IS_SIMULATOR
-; 67 
-; 68     #else
-; 69         NetUpdateData();
+; 67     
+; 68     #ifdef _IS_SIMULATOR
+; 69 
+; 70     #else
+; 71         NetUpdateData();
 	call netupdatedata
-; 70         ThreadsTickNow();
+; 72         ThreadsTickNow();
 	call threadsticknow
-; 71     #endif
-; 72     
-; 73     for(;;) {
+; 73     #endif
+; 74     
+; 75     for(;;) {
 l_1:
-; 74         //ThreadsTick();
-; 75         #ifdef _IS_SIMULATOR
-; 76             getKeyboardCharA();
-; 77             KeyboardEventA();
-; 78         #else
-; 79             getKeyboardStateA();
+; 76         //ThreadsTick();
+; 77         #ifdef _IS_SIMULATOR
+; 78             getKeyboardCharA();
+; 79             KeyboardEventA();
+; 80         #else
+; 81             getKeyboardStateA();
 	call getkeyboardstatea
-; 80             if (a == 0xFF) {
+; 82             if (a == 0xFF) {
 	cp 255
 	jp nz, l_3
-; 81                 getKeyboardCodeA();
+; 83                 getKeyboardCodeA();
 	call getkeyboardcodea
-; 82                 KeyboardEventA();
+; 84                 KeyboardEventA();
 	call keyboardeventa
 	jp l_4
 l_3:
-; 83             } else {
-; 84                 ThreadsTick();
+; 85             } else {
+; 86                 ThreadsTick();
 	call threadstick
 l_4:
 	jp l_1
-; 85             }
-; 86         #endif
-; 87     }
-; 88 
-; 89 }
+; 87             }
+; 88         #endif
+; 89     }
 ; 90 
-; 91 void KeyboardEventA() {
+; 91 }
+; 92 
+; 93 void KeyboardEventA() {
 keyboardeventa:
-; 92     push_pop(bc) {
+; 94     push_pop(bc) {
 	push bc
-; 93         b = a; //Save
+; 95         b = a; //Save
 	ld b, a
-; 94         if ((a = b) == 0x03) { //F4
+; 96         if ((a = b) == 0x03) { //F4
 	ld a, b
 	cp 3
 	jp nz, l_5
-; 95             vboxClearCash();
+; 97             vboxClearCash();
 	call vboxclearcash
-; 96             ordos_start();
+; 98             ordos_start();
 	call ordos_start
 	jp l_6
 l_5:
-; 97         } else if ((a = b) == 0x02) { //F3 Open FTP settings
+; 99         } else if ((a = b) == 0x02) { //F3 Open FTP settings
 	ld a, b
 	cp 2
 	jp nz, l_7
-; 98             CurrentViewDiskOrFtpViewByIdA(a = CurrentViewId);
+; 100             CurrentViewDiskOrFtpViewByIdA(a = CurrentViewId);
 	ld a, (currentviewid)
 	call currentviewdiskorftpviewbyida
-; 99             if (a == 1) {
+; 101             if (a == 1) {
 	cp 1
 	jp nz, l_9
-; 100                 FtpSettingsViewShow();
+; 102                 FtpSettingsViewShow();
 	call ftpsettingsviewshow
 l_9:
 	jp l_8
 l_7:
-; 101             }
-; 102         } else if ((a = b) == 0x01) { //F2 Open WiFi settings
+; 103             }
+; 104         } else if ((a = b) == 0x01) { //F2 Open WiFi settings
 	ld a, b
 	cp 1
 	jp nz, l_11
-; 103             CurrentViewDiskOrFtpViewByIdA(a = CurrentViewId);
+; 105             CurrentViewDiskOrFtpViewByIdA(a = CurrentViewId);
 	ld a, (currentviewid)
 	call currentviewdiskorftpviewbyida
-; 104             if (a == 1) {
+; 106             if (a == 1) {
 	cp 1
 	jp nz, l_13
-; 105                 WiFiSettingsViewShow();
+; 107                 WiFiSettingsViewShow();
 	call wifisettingsviewshow
 l_13:
 l_11:
 l_8:
 l_6:
-; 106             }
-; 107         }
-; 108         
-; 109         c = 0;
+; 108             }
+; 109         }
+; 110         
+; 111         c = 0;
 	ld c, 0
-; 110         if ((a = CurrentViewId) == DiskViewId) {
+; 112         if ((a = CurrentViewId) == DiskViewId) {
 	ld a, (currentviewid)
 	cp 1
 	jp nz, l_15
-; 111             DiskViewKeyA(a = b);
+; 113             DiskViewKeyA(a = b);
 	ld a, b
 	call diskviewkeya
-; 112             c = 1;
+; 114             c = 1;
 	ld c, 1
 	jp l_16
 l_15:
-; 113         } else if ((a = CurrentViewId) == FtpViewId) {
+; 115         } else if ((a = CurrentViewId) == FtpViewId) {
 	ld a, (currentviewid)
 	cp 2
 	jp nz, l_17
-; 114             FtpViewKeyA(a = b);
+; 116             FtpViewKeyA(a = b);
 	ld a, b
 	call ftpviewkeya
-; 115             c = 1;
+; 117             c = 1;
 	ld c, 1
 	jp l_18
 l_17:
-; 116         } else if ((a = CurrentViewId) == SelectDiskViewId) {
+; 118         } else if ((a = CurrentViewId) == SelectDiskViewId) {
 	ld a, (currentviewid)
 	cp 3
 	jp nz, l_19
-; 117             SelectDiskViewKeyA(a = b);
+; 119             SelectDiskViewKeyA(a = b);
 	ld a, b
 	call selectdiskviewkeya
-; 118             c = 1;
+; 120             c = 1;
 	ld c, 1
 	jp l_20
 l_19:
-; 119         } else if ((a = CurrentViewId) == WiFiSettingsViewId) {
+; 121         } else if ((a = CurrentViewId) == WiFiSettingsViewId) {
 	ld a, (currentviewid)
 	cp 5
 	jp nz, l_21
-; 120             WiFiSettingsViewKeyA(a = b);
+; 122             WiFiSettingsViewKeyA(a = b);
 	ld a, b
 	call wifisettingsviewkeya
-; 121             c = 1;
+; 123             c = 1;
 	ld c, 1
 	jp l_22
 l_21:
-; 122         } else if ((a = CurrentViewId) == WiFiNetworksViewId) {
+; 124         } else if ((a = CurrentViewId) == WiFiNetworksViewId) {
 	ld a, (currentviewid)
 	cp 7
 	jp nz, l_23
-; 123             WiFiNetworksViewKeyA(a = b);
+; 125             WiFiNetworksViewKeyA(a = b);
 	ld a, b
 	call wifinetworksviewkeya
-; 124             c = 1;
+; 126             c = 1;
 	ld c, 1
 	jp l_24
 l_23:
-; 125         } else if ((a = CurrentViewId) == FtpSettingsViewId) {
+; 127         } else if ((a = CurrentViewId) == FtpSettingsViewId) {
 	ld a, (currentviewid)
 	cp 8
 	jp nz, l_25
-; 126             FtpSettingsViewKeyA(a = b);
+; 128             FtpSettingsViewKeyA(a = b);
 	ld a, b
 	call ftpsettingsviewkeya
-; 127             c = 1;
+; 129             c = 1;
 	ld c, 1
 l_25:
 l_24:
@@ -2608,7 +2612,17 @@ l_172:
 ; 382                         FtpViewLoadFile();
 	call ftpviewloadfile
 l_176:
+	jp l_175
 l_174:
+; 383                     }
+; 384                 } else if ((a = l) == 'H') { // Перейти в домашную папку
+	ld a, l
+	cp 72
+	jp nz, l_178
+; 385                     ThreadsNetFtpGoToHomeDir();
+	call threadsnetftpgotohomedir
+l_178:
+l_175:
 l_173:
 l_167:
 l_165:
@@ -2617,168 +2631,163 @@ l_161:
 l_158:
 	pop hl
 	ret
-; 383                     }
-; 384                 }
-; 385             }
-; 386         }
-; 387     }
-; 388 }
-; 389 
-; 390 void FtpViewLoadFile() {
+; 386                 }
+; 387             }
+; 388         }
+; 389     }
+; 390 }
+; 391 
+; 392 void FtpViewLoadFile() {
 ftpviewloadfile:
-; 391     LoadViewShowHL(hl = LoadViewLoadTitle);
+; 393     LoadViewShowHL(hl = LoadViewLoadTitle);
 	ld hl, loadviewloadtitle
 	call loadviewshowhl
-; 392     #ifdef _IS_SIMULATOR
-; 393         push_pop(bc) {
-; 394             b = 0;
-; 395             do {
-; 396                 LoadViewShowProgressA(a = b);
-; 397                 c = 1;
-; 398                 do {
-; 399                     delay50ms();
-; 400                     c--;
-; 401                 } while ((a = c) > 0);
-; 402                 b++;
-; 403             } while ((a = b) < 40);
-; 404             LoadViewClose();
-; 405             DiskViewUpdateDateAndUI();
-; 406         }
-; 407     #else
-; 408         FtpViewNeedLoad();
+; 394     #ifdef _IS_SIMULATOR
+; 395         push_pop(bc) {
+; 396             b = 0;
+; 397             do {
+; 398                 LoadViewShowProgressA(a = b);
+; 399                 c = 1;
+; 400                 do {
+; 401                     delay50ms();
+; 402                     c--;
+; 403                 } while ((a = c) > 0);
+; 404                 b++;
+; 405             } while ((a = b) < 40);
+; 406             LoadViewClose();
+; 407             DiskViewUpdateDateAndUI();
+; 408         }
+; 409     #else
+; 410         FtpViewNeedLoad();
 	call ftpviewneedload
-; 409         LoadViewClose();
+; 411         LoadViewClose();
 	call loadviewclose
-; 410         DiskViewUpdateDateAndUI();
+; 412         DiskViewUpdateDateAndUI();
 	jp diskviewupdatedateandui
-; 411     #endif
-; 412 }
-; 413 
-; 414 void FtpViewNeedLoad() {
+; 413     #endif
+; 414 }
+; 415 
+; 416 void FtpViewNeedLoad() {
 ftpviewneedload:
-; 415     ftpFileDownloadA(a = FtpViewFileCurrentPos);
+; 417     ftpFileDownloadA(a = FtpViewFileCurrentPos);
 	ld a, (ftpviewfilecurrentpos)
 	call ftpfiledownloada
-; 416     
-; 417     // Считываем текущий диск и устанавливаем его
-; 418     a = DiskViewDiskNum;
+; 418     
+; 419     // Считываем текущий диск и устанавливаем его
+; 420     a = DiskViewDiskNum;
 	ld a, (diskviewdisknum)
-; 419     ordos_wnd();
+; 421     ordos_wnd();
 	call ordos_wnd
-; 420     
-; 421     // Получаем адрес куда надо начинать писать данные
-; 422     ordos_mxdsk();
+; 422     
+; 423     // Получаем адрес куда надо начинать писать данные
+; 424     ordos_mxdsk();
 	call ordos_mxdsk
-; 423     DiskViewStartNewFile = hl;
+; 425     DiskViewStartNewFile = hl;
 	ld (diskviewstartnewfile), hl
-; 424     
-; 425     // Вызываем закачку
-; 426     ftpFileDownloadNext();
+; 426     
+; 427     // Вызываем закачку
+; 428     ftpFileDownloadNext();
 	jp ftpfiledownloadnext
-; 427 }
-; 428 
-; 429 void FtpViewNetLoadAndUpdate() {
+; 429 }
+; 430 
+; 431 void FtpViewNetLoadAndUpdate() {
 ftpviewnetloadandupdate:
-; 430     FtpViewShowSelectLineA(a = 0);
+; 432     FtpViewShowSelectLineA(a = 0);
 	ld a, 0
 	call ftpviewshowselectlinea
-; 431     getFtpCurrentPathNew();
+; 433     getFtpCurrentPathNew();
 	call getftpcurrentpathnew
-; 432     if ((a = FtpStateViewStatus) == 1) {
+; 434     if ((a = FtpStateViewStatus) == 1) {
 	ld a, (ftpstateviewstatus)
 	cp 1
-	jp nz, l_178
-; 433         updateFtpList();
+	jp nz, l_180
+; 435         updateFtpList();
 	call updateftplist
-; 434         getNetFtpListNew();
+; 436         getNetFtpListNew();
 	call getnetftplistnew
-l_178:
-; 435     }
-; 436     a = 0;
+l_180:
+; 437     }
+; 438     a = 0;
 	ld a, 0
-; 437     FtpViewFileCurrentPos = a;
+; 439     FtpViewFileCurrentPos = a;
 	ld (ftpviewfilecurrentpos), a
-; 438     FtpViewShowFileList();
+; 440     FtpViewShowFileList();
 	call ftpviewshowfilelist
-; 439     FtpViewShowPath();
+; 441     FtpViewShowPath();
 	call ftpviewshowpath
-; 440     FtpViewShowSelectLineA(a = 1);
+; 442     FtpViewShowSelectLineA(a = 1);
 	ld a, 1
 	jp ftpviewshowselectlinea
-; 441 }
-; 442 
-; 443 void FtpViewCurrentPosIsDir() {
+; 443 }
+; 444 
+; 445 void FtpViewCurrentPosIsDir() {
 ftpviewcurrentposisdir:
-; 444     push_pop(hl, bc) {
+; 446     push_pop(hl, bc) {
 	push hl
 	push bc
-; 445         hl = FtpViewFilesList;
+; 447         hl = FtpViewFilesList;
 	ld hl, ftpviewfileslist
-; 446         //--
-; 447         a = FtpViewFileCurrentPos;
+; 448         //--
+; 449         a = FtpViewFileCurrentPos;
 	ld a, (ftpviewfilecurrentpos)
-; 448         a &= 0x3F;
+; 450         a &= 0x3F;
 	and 63
-; 449         b = 0;
+; 451         b = 0;
 	ld b, 0
-; 450         carry_rotate_left(a, 4);
+; 452         carry_rotate_left(a, 4);
 	rla
 	rla
 	rla
 	rla
-; 451         if (flag_c) { // Если переполняние младшего разряда, инкремент старшего
-	jp nc, l_180
-; 452             b++;
+; 453         if (flag_c) { // Если переполняние младшего разряда, инкремент старшего
+	jp nc, l_182
+; 454             b++;
 	inc b
-l_180:
-; 453         }
-; 454         c = a;
+l_182:
+; 455         }
+; 456         c = a;
 	ld c, a
-; 455         //-- Смещаем на позицию файла
-; 456         hl += bc;
+; 457         //-- Смещаем на позицию файла
+; 458         hl += bc;
 	add hl, bc
-; 457         //-- Смещаем на признак директории
-; 458         bc = 10;
+; 459         //-- Смещаем на признак директории
+; 460         bc = 10;
 	ld bc, 10
-; 459         hl += bc;
+; 461         hl += bc;
 	add hl, bc
-; 460         //--
-; 461         a = *hl;
+; 462         //--
+; 463         a = *hl;
 	ld a, (hl)
 	pop bc
 	pop hl
 	ret
-; 462     }
-; 463 }
-; 464 
-; 465 void FtpViewEmptyList() {
+; 464     }
+; 465 }
+; 466 
+; 467 void FtpViewEmptyList() {
 ftpviewemptylist:
-; 466     push_pop(hl) {
+; 468     push_pop(hl) {
 	push hl
-; 467         a = 1;
+; 469         a = 1;
 	ld a, 1
-; 468         FtpViewFilesListCount = a;
+; 470         FtpViewFilesListCount = a;
 	ld (ftpviewfileslistcount), a
-; 469         a = 0;
+; 471         a = 0;
 	ld a, 0
-; 470         FtpViewFileCurrentPos = a;
+; 472         FtpViewFileCurrentPos = a;
 	ld (ftpviewfilecurrentpos), a
-; 471         hl = FtpViewFilesList;
+; 473         hl = FtpViewFilesList;
 	ld hl, ftpviewfileslist
-; 472         //--
-; 473         *hl = '.';
-	ld (hl), 46
-; 474         hl++;
-	inc hl
+; 474         //--
 ; 475         *hl = '.';
 	ld (hl), 46
 ; 476         hl++;
 	inc hl
-; 477         //--
-; 478         *hl = ' ';
-	ld (hl), 32
-; 479         hl++;
+; 477         *hl = '.';
+	ld (hl), 46
+; 478         hl++;
 	inc hl
+; 479         //--
 ; 480         *hl = ' ';
 	ld (hl), 32
 ; 481         hl++;
@@ -2799,49 +2808,53 @@ ftpviewemptylist:
 	ld (hl), 32
 ; 489         hl++;
 	inc hl
+; 490         *hl = ' ';
+	ld (hl), 32
+; 491         hl++;
+	inc hl
 	pop hl
-; 490     }
-; 491     //--
-; 492     FtpViewListUpdateUI();
-; 493 }
-; 494 
-; 495 void FtpViewListUpdateUI() {
+; 492     }
+; 493     //--
+; 494     FtpViewListUpdateUI();
+; 495 }
+; 496 
+; 497 void FtpViewListUpdateUI() {
 ftpviewlistupdateui:
-; 496     FtpViewShowSelectLineA(a = 0);
+; 498     FtpViewShowSelectLineA(a = 0);
 	ld a, 0
 	call ftpviewshowselectlinea
-; 497     a = 0;
+; 499     a = 0;
 	ld a, 0
-; 498     FtpViewFileCurrentPos = a;
+; 500     FtpViewFileCurrentPos = a;
 	ld (ftpviewfilecurrentpos), a
-; 499     FtpViewShowPath();
+; 501     FtpViewShowPath();
 	call ftpviewshowpath
-; 500     FtpViewShowFileList();
+; 502     FtpViewShowFileList();
 	call ftpviewshowfilelist
-; 501     FtpViewShowSelectLineA(a = 1);
+; 503     FtpViewShowSelectLineA(a = 1);
 	ld a, 1
 	jp ftpviewshowselectlinea
-; 502 }
-; 503 
-; 504 uint8_t FtpViewX = 0;
+; 504 }
+; 505 
+; 506 uint8_t FtpViewX = 0;
 ftpviewx:
 	db 0
-; 505 uint8_t FtpViewY = 4;
+; 507 uint8_t FtpViewY = 4;
 ftpviewy:
 	db 4
-; 506 uint8_t FtpViewDX = 28;
+; 508 uint8_t FtpViewDX = 28;
 ftpviewdx:
 	db 28
-; 507 uint8_t FtpViewDY = 25;
+; 509 uint8_t FtpViewDY = 25;
 ftpviewdy:
 	db 25
-; 508 uint8_t FtpViewColor = 0x1F;
+; 510 uint8_t FtpViewColor = 0x1F;
 ftpviewcolor:
 	db 31
-; 509 uint8_t FtpViewInvColor = 0xF1;
+; 511 uint8_t FtpViewInvColor = 0xF1;
 ftpviewinvcolor:
 	db 241
-; 511 uint8_t FtpViewTitle[] = {0xB5, 'F', 'T', 'P', 0xC6, '\0'}; //"\x12" + "FTP";
+; 513 uint8_t FtpViewTitle[] = {0xB5, 'F', 'T', 'P', 0xC6, '\0'}; //"\x12" + "FTP";
 ftpviewtitle:
 	db 181
 	db 70
@@ -2849,7 +2862,7 @@ ftpviewtitle:
 	db 80
 	db 198
 	db 0
-; 512 uint8_t FtpViewPath[16] = "/Orion/TEST/";
+; 514 uint8_t FtpViewPath[16] = "/Orion/TEST/";
 ftpviewpath:
 	db 47
 	db 79
@@ -2864,13 +2877,13 @@ ftpviewpath:
 	db 84
 	db 47
 	ds 4
-; 514 uint8_t FtpViewFileCurrentPos = 0;
+; 516 uint8_t FtpViewFileCurrentPos = 0;
 ftpviewfilecurrentpos:
 	db 0
-; 529 uint8_t FtpViewFilesListCount = 1;
+; 531 uint8_t FtpViewFilesListCount = 1;
 ftpviewfileslistcount:
 	db 1
-; 530 uint8_t FtpViewFilesList[16 * 23] = {
+; 532 uint8_t FtpViewFilesList[16 * 23] = {
 ftpviewfileslist:
 	db 46
 	db 46
@@ -2995,13 +3008,13 @@ diskviewshowdir:
 ; 65         if ((a = DiskViewDirCount) >= 1) {
 	ld a, (diskviewdircount)
 	or a
-	jp z, l_182
+	jp z, l_184
 ; 66             hl = DiskViewDirBufer;
 	ld hl, (diskviewdirbufer)
 ; 67             b = 0;
 	ld b, 0
 ; 68             do {
-l_184:
+l_186:
 ; 69                 a = d;
 	ld a, d
 ; 70                 myCharPosX = a;
@@ -3015,7 +3028,7 @@ l_184:
 ; 74                 c = 8;
 	ld c, 8
 ; 75                 do {
-l_187:
+l_189:
 ; 76                     printMyChatA(a = *hl);
 	ld a, (hl)
 	call printmychata
@@ -3023,11 +3036,11 @@ l_187:
 	inc hl
 ; 78                     c--;
 	dec c
-l_188:
+l_190:
 ; 79                 } while ((a = c) > 0);
 	ld a, c
 	or a
-	jp nz, l_187
+	jp nz, l_189
 ; 80                 hl++;
 	inc hl
 ; 81                 hl++;
@@ -3050,11 +3063,11 @@ l_188:
 	ld a, (diskviewdircount)
 ; 90                 a--;
 	dec a
-l_185:
+l_187:
 ; 91             } while (a >= b);
 	cp b
-	jp nc, l_184
-l_182:
+	jp nc, l_186
+l_184:
 ; 92         }
 ; 93         // show empty rows
 ; 94         a = DiskViewDirCount;
@@ -3080,7 +3093,7 @@ l_182:
 ; 105         c = 0;
 	ld c, 0
 ; 106         do {
-l_190:
+l_192:
 ; 107             a = d;
 	ld a, d
 ; 108             myCharPosX = a;
@@ -3099,26 +3112,26 @@ l_190:
 ; 115             h = a;
 	ld h, a
 ; 116             do {
-l_193:
+l_195:
 ; 117                 printMyChatA(a = ' ');
 	ld a, 32
 	call printmychata
 ; 118                 h--;
 	dec h
-l_194:
+l_196:
 ; 119             } while ((a = h) > 0);
 	ld a, h
 	or a
-	jp nz, l_193
+	jp nz, l_195
 ; 120             b--;
 	dec b
 ; 121             c++;
 	inc c
-l_191:
+l_193:
 ; 122         } while ((a = b) > 0);
 	ld a, b
 	or a
-	jp nz, l_190
+	jp nz, l_192
 	pop de
 	pop bc
 	pop hl
@@ -3135,65 +3148,65 @@ diskviewkeya:
 ; 129         if ((a = CurrentViewId) == DiskViewId) {
 	ld a, (currentviewid)
 	cp 1
-	jp nz, l_196
+	jp nz, l_198
 ; 130             if ((a = l) == 0x09) { //0x09 TAB
 	ld a, l
 	cp 9
-	jp nz, l_198
+	jp nz, l_200
 ; 131                 CurrentViewChangeIdA(a = FtpViewId);
 	ld a, 2
 	call currentviewchangeida
-	jp l_199
-l_198:
+	jp l_201
+l_200:
 ; 132             } else {
 ; 133                 if ((a = l) == 0x1A) { //down
 	ld a, l
 	cp 26
-	jp nz, l_200
+	jp nz, l_202
 ; 134                     DiskViewFileCurrentPosUpdateA(a = 0x01);
 	ld a, 1
 	call diskviewfilecurrentposupdatea
-	jp l_201
-l_200:
+	jp l_203
+l_202:
 ; 135                 } else if ((a = l) == 0x19) { //up
 	ld a, l
 	cp 25
-	jp nz, l_202
+	jp nz, l_204
 ; 136                     DiskViewFileCurrentPosUpdateA(a = 0xFF);
 	ld a, 255
 	call diskviewfilecurrentposupdatea
-	jp l_203
-l_202:
+	jp l_205
+l_204:
 ; 137                 } else if ((a = l) == 0x0D) { //Enter
 	ld a, l
 	cp 13
-	jp nz, l_204
+	jp nz, l_206
 ; 138                     if ((a = DiskViewFileCurrentPos) == 0) { // Смена диска
 	ld a, (diskviewfilecurrentpos)
 	or a
-	jp nz, l_206
+	jp nz, l_208
 ; 139                         DiskViewNextDiskNum();
 	call diskviewnextdisknum
+	jp l_209
+l_208:
+; 140                     } else { // Закачка на FTP
+l_209:
 	jp l_207
 l_206:
-; 140                     } else { // Закачка на FTP
-l_207:
-	jp l_205
-l_204:
 ; 141                         
 ; 142                     }
 ; 143                 } else if ((a = l) == 'D') { //  Показать выбор диска
 	ld a, l
 	cp 68
-	jp nz, l_208
+	jp nz, l_210
 ; 144                     SelectDiskViewShow();
 	call selectdiskviewshow
-l_208:
+l_210:
+l_207:
 l_205:
 l_203:
 l_201:
-l_199:
-l_196:
+l_198:
 	pop hl
 	ret
 ; 145                 }
@@ -3210,10 +3223,10 @@ diskviewnextdisknum:
 	inc a
 ; 154     if (a == 'E') {
 	cp 69
-	jp nz, l_210
+	jp nz, l_212
 ; 155         a = 'A';
 	ld a, 65
-l_210:
+l_212:
 ; 156     }
 ; 157     DiskViewSetDiskNumA();
 ; 158 }
@@ -3243,11 +3256,11 @@ diskviewupdatedateandui:
 ; 172     if ((a = CurrentViewId) == DiskViewId) {
 	ld a, (currentviewid)
 	cp 1
-	jp nz, l_212
+	jp nz, l_214
 ; 173         DiskViewShowSelectLineA(a = 1);
 	ld a, 1
 	call diskviewshowselectlinea
-l_212:
+l_214:
 	ret
 ; 174     }
 ; 175 }
@@ -3282,12 +3295,12 @@ diskviewfilecurrentposupdatea:
 	ld b, a
 ; 194         if (a == 0) {
 	or a
-	jp nz, l_214
+	jp nz, l_216
 ; 195             DiskViewShowSelectLineA(a = 1);
 	ld a, 1
 	call diskviewshowselectlinea
-	jp l_215
-l_214:
+	jp l_217
+l_216:
 ; 196         } else {
 ; 197             a = DiskViewDirCount;
 	ld a, (diskviewdircount)
@@ -3305,27 +3318,27 @@ l_214:
 ; 203             //
 ; 204             if (a == 0xFF) {
 	cp 255
-	jp nz, l_216
+	jp nz, l_218
 ; 205                 a = c;
 	ld a, c
 ; 206                 a--;
 	dec a
-	jp l_217
-l_216:
+	jp l_219
+l_218:
 ; 207             } else if (a == c) {
 	cp c
-	jp nz, l_218
+	jp nz, l_220
 ; 208                 a = 0;
 	ld a, 0
-l_218:
-l_217:
+l_220:
+l_219:
 ; 209             }
 ; 210             DiskViewFileCurrentPos = a;
 	ld (diskviewfilecurrentpos), a
 ; 211             DiskViewShowSelectLineA(a = 1);
 	ld a, 1
 	call diskviewshowselectlinea
-l_215:
+l_217:
 	pop bc
 	ret
 ; 212         }
@@ -3377,15 +3390,15 @@ diskviewshowselectlinea:
 ; 239         if ((a = c) == 0) {
 	ld a, c
 	or a
-	jp nz, l_220
+	jp nz, l_222
 ; 240             a = DiskViewColor;
 	ld a, (diskviewcolor)
-	jp l_221
-l_220:
+	jp l_223
+l_222:
 ; 241         } else {
 ; 242             a = DiskViewInvColor;
 	ld a, (diskviewinvcolor)
-l_221:
+l_223:
 ; 243         }
 ; 244         c = a;
 	ld c, a
@@ -3493,84 +3506,84 @@ currentviewsetida:
 ; 34     if ((a = CurrentViewReturnIdPos) == 0) {
 	ld a, (currentviewreturnidpos)
 	or a
-	jp nz, l_222
+	jp nz, l_224
 ; 35         if ((a = CurrentViewId) == DiskViewId) {
 	ld a, (currentviewid)
 	cp 1
-	jp nz, l_224
+	jp nz, l_226
 ; 36             FtpViewShowSelectLineA(a = 0);
 	ld a, 0
 	call ftpviewshowselectlinea
 ; 37             DiskViewShowSelectLineA(a = 1);
 	ld a, 1
 	call diskviewshowselectlinea
-	jp l_225
-l_224:
+	jp l_227
+l_226:
 ; 38         } else if ((a = CurrentViewId) == FtpViewId) {
 	ld a, (currentviewid)
 	cp 2
-	jp nz, l_226
+	jp nz, l_228
 ; 39             FtpViewShowSelectLineA(a = 1);
 	ld a, 1
 	call ftpviewshowselectlinea
 ; 40             DiskViewShowSelectLineA(a = 0);
 	ld a, 0
 	call diskviewshowselectlinea
-	jp l_227
-l_226:
+	jp l_229
+l_228:
 ; 41         } else if ((a = CurrentViewId) == SelectDiskViewId) {
 	ld a, (currentviewid)
 	cp 3
-	jp nz, l_228
+	jp nz, l_230
 ; 42             FtpViewShowSelectLineA(a = 0);
 	ld a, 0
 	call ftpviewshowselectlinea
 ; 43             DiskViewShowSelectLineA(a = 0);
 	ld a, 0
 	call diskviewshowselectlinea
-	jp l_229
-l_228:
+	jp l_231
+l_230:
 ; 44         } else if ((a = CurrentViewId) == LoadViewId) {
 	ld a, (currentviewid)
 	cp 4
-	jp nz, l_230
+	jp nz, l_232
 ; 45             FtpViewShowSelectLineA(a = 0);
 	ld a, 0
 	call ftpviewshowselectlinea
 ; 46             DiskViewShowSelectLineA(a = 0);
 	ld a, 0
 	call diskviewshowselectlinea
-	jp l_231
-l_230:
+	jp l_233
+l_232:
 ; 47         } else if ((a = CurrentViewId) == WiFiSettingsViewId) {
 	ld a, (currentviewid)
 	cp 5
-	jp nz, l_232
+	jp nz, l_234
 ; 48             FtpViewShowSelectLineA(a = 0);
 	ld a, 0
 	call ftpviewshowselectlinea
 ; 49             DiskViewShowSelectLineA(a = 0);
 	ld a, 0
 	call diskviewshowselectlinea
-	jp l_233
-l_232:
+	jp l_235
+l_234:
 ; 50         } else if ((a = CurrentViewId) == FtpSettingsViewId) {
 	ld a, (currentviewid)
 	cp 8
-	jp nz, l_234
+	jp nz, l_236
 ; 51             FtpViewShowSelectLineA(a = 0);
 	ld a, 0
 	call ftpviewshowselectlinea
 ; 52             DiskViewShowSelectLineA(a = 0);
 	ld a, 0
 	call diskviewshowselectlinea
-l_234:
+l_236:
+l_235:
 l_233:
 l_231:
 l_229:
 l_227:
-l_225:
-l_222:
+l_224:
 	ret
 ; 53         }
 ; 54     }
@@ -3613,7 +3626,7 @@ currentviewpopid:
 ; 75     if ((a = CurrentViewReturnIdPos) > 0) {
 	ld a, (currentviewreturnidpos)
 	or a
-	jp z, l_236
+	jp z, l_238
 ; 76         // Decriment
 ; 77         a = CurrentViewReturnIdPos;
 	ld a, (currentviewreturnidpos)
@@ -3632,12 +3645,12 @@ currentviewpopid:
 	add hl, de
 ; 85         a = *hl;
 	ld a, (hl)
-	jp l_237
-l_236:
+	jp l_239
+l_238:
 ; 86     } else {
 ; 87         a = CurrentViewId;
 	ld a, (currentviewid)
-l_237:
+l_239:
 	ret
 ; 88     }
 ; 89 }
@@ -3661,30 +3674,30 @@ currentviewdiskorftpviewbyida:
 ; 101         if ((a = b) == DiskViewId) {
 	ld a, b
 	cp 1
-	jp nz, l_238
+	jp nz, l_240
 ; 102             a = 1;
 	ld a, 1
 ; 103             CurrentViewDiskOrFtpViewFocus = a;
 	ld (currentviewdiskorftpviewfocus), a
-	jp l_239
-l_238:
+	jp l_241
+l_240:
 ; 104         } else if ((a = b) == FtpViewId) {
 	ld a, b
 	cp 2
-	jp nz, l_240
+	jp nz, l_242
 ; 105             a = 1;
 	ld a, 1
 ; 106             CurrentViewDiskOrFtpViewFocus = a;
 	ld (currentviewdiskorftpviewfocus), a
-	jp l_241
-l_240:
+	jp l_243
+l_242:
 ; 107         } else {
 ; 108             a = 0;
 	ld a, 0
 ; 109             CurrentViewDiskOrFtpViewFocus = a;
 	ld (currentviewdiskorftpviewfocus), a
+l_243:
 l_241:
-l_239:
 	pop bc
 ; 110         }
 ; 111     }
@@ -3828,17 +3841,17 @@ selectdiskviewshowdisklist:
 ; 67         b = a;
 	ld b, a
 ; 68         do {
-l_242:
+l_244:
 ; 69             printMyChatA(a = 0x5F);
 	ld a, 95
 	call printmychata
 ; 70             b--;
 	dec b
-l_243:
+l_245:
 ; 71         } while ((a = b) > 0);
 	ld a, b
 	or a
-	jp nz, l_242
+	jp nz, l_244
 ; 72         // Disk List
 ; 73         a = SelectDiskViewY;
 	ld a, (selectdiskviewy)
@@ -3855,7 +3868,7 @@ l_243:
 ; 79         b = 0;
 	ld b, 0
 ; 80         do {
-l_245:
+l_247:
 ; 81             a = b;
 	ld a, b
 ; 82             a += 'A';
@@ -3867,11 +3880,11 @@ l_245:
 	call mycharposxspacea
 ; 85             b++;
 	inc b
-l_246:
+l_248:
 ; 86         } while ((a = b) < 4);
 	ld a, b
 	cp 4
-	jp c, l_245
+	jp c, l_247
 	pop bc
 	ret
 ; 87     }
@@ -3901,9 +3914,9 @@ selectdiskviewupdateselecta:
 ; 101         if ((a = b) > 0) {
 	ld a, b
 	or a
-	jp z, l_248
+	jp z, l_250
 ; 102             do {
-l_250:
+l_252:
 ; 103                 a = h;
 	ld a, h
 ; 104                 a += 3;
@@ -3912,12 +3925,12 @@ l_250:
 	ld h, a
 ; 106                 b--;
 	dec b
-l_251:
+l_253:
 ; 107             } while ((a = b) > 0);
 	ld a, b
 	or a
-	jp nz, l_250
-l_248:
+	jp nz, l_252
+l_250:
 ; 108         }
 ; 109         a = SelectDiskViewY;
 	ld a, (selectdiskviewy)
@@ -3938,15 +3951,15 @@ l_248:
 ; 118         if ((a = c) == 0) {
 	ld a, c
 	or a
-	jp nz, l_253
+	jp nz, l_255
 ; 119             a = SelectDiskViewColor;
 	ld a, (selectdiskviewcolor)
-	jp l_254
-l_253:
+	jp l_256
+l_255:
 ; 120         } else {
 ; 121             a = SelectDiskViewInvColor;
 	ld a, (selectdiskviewinvcolor)
-l_254:
+l_256:
 ; 122         }
 ; 123         c = a;
 	ld c, a
@@ -3992,21 +4005,21 @@ selectdiskviewkeya:
 ; 143         if ((a = CurrentViewId) == SelectDiskViewId) {
 	ld a, (currentviewid)
 	cp 3
-	jp nz, l_255
+	jp nz, l_257
 ; 144             if ((a = l) == 0x1B) { //ESC выход
 	ld a, l
 	cp 27
-	jp nz, l_257
+	jp nz, l_259
 ; 145                 vboxClose();
 	call vboxclose
 ; 146                 CurrentViewReturn();
 	call currentviewreturn
-	jp l_258
-l_257:
+	jp l_260
+l_259:
 ; 147             } else if ((a = l) == 0x0D) { // Выбор диска
 	ld a, l
 	cp 13
-	jp nz, l_259
+	jp nz, l_261
 ; 148                 vboxClose();
 	call vboxclose
 ; 149                 CurrentViewReturn();
@@ -4017,52 +4030,52 @@ l_257:
 	add 65
 ; 152                 DiskViewSetDiskNumA();
 	call diskviewsetdisknuma
-	jp l_260
-l_259:
+	jp l_262
+l_261:
 ; 153             } else if ((a = l) == 0x18) { // Вправл
 	ld a, l
 	cp 24
-	jp nz, l_261
+	jp nz, l_263
 ; 154                 a = SelectDiskViewCurrentPos;
 	ld a, (selectdiskviewcurrentpos)
 ; 155                 a++;
 	inc a
 ; 156                 if (a == 4) {
 	cp 4
-	jp nz, l_263
+	jp nz, l_265
 ; 157                     a = 0;
 	ld a, 0
-l_263:
+l_265:
 ; 158                 }
 ; 159                 SelectDiskViewSetCurrentPosA();
 	call selectdiskviewsetcurrentposa
-	jp l_262
-l_261:
+	jp l_264
+l_263:
 ; 160             } else if ((a = l) == 0x08) { // Влево
 	ld a, l
 	cp 8
-	jp nz, l_265
+	jp nz, l_267
 ; 161                 a = SelectDiskViewCurrentPos;
 	ld a, (selectdiskviewcurrentpos)
 ; 162                 if (a == 0) {
 	or a
-	jp nz, l_267
+	jp nz, l_269
 ; 163                     a = 3;
 	ld a, 3
-	jp l_268
-l_267:
+	jp l_270
+l_269:
 ; 164                 } else {
 ; 165                     a--;
 	dec a
-l_268:
+l_270:
 ; 166                 }
 ; 167                 SelectDiskViewSetCurrentPosA();
 	call selectdiskviewsetcurrentposa
-l_265:
+l_267:
+l_264:
 l_262:
 l_260:
-l_258:
-l_255:
+l_257:
 	pop hl
 	ret
 ; 168             }
@@ -4144,13 +4157,13 @@ sendcommand:
 ; 32         if ((a = d) > 0) {
 	ld a, d
 	or a
-	jp z, l_269
+	jp z, l_271
 ; 33             h = d;
 	ld h, d
 ; 34             de = ESP_I2S_BUFFER;
 	ld de, esp_i2s_buffer
 ; 35             do {
-l_271:
+l_273:
 ; 36                 a = *de;
 	ld a, (de)
 ; 37                 de++;
@@ -4161,9 +4174,9 @@ l_271:
 	call transmitnewi2c
 ; 40                 h--;
 	dec h
-l_272:
-	jp nz, l_271
-l_269:
+l_274:
+	jp nz, l_273
+l_271:
 ; 41             } while(flag_nz);
 ; 42         }
 ; 43 
@@ -4212,22 +4225,22 @@ readnewinbuffer:
 ; 68             de = ESP_I2S_BUFFER;
 	ld de, esp_i2s_buffer
 ; 69             do {
-l_274:
+l_276:
 ; 70                 push_pop(bc) {
 	push bc
 ; 71                     // Если последний ожидаемый байт - то передаем NACK
 ; 72                     if ((a = l) == 1) {
 	ld a, l
 	cp 1
-	jp nz, l_277
+	jp nz, l_279
 ; 73                         b = 0x01;
 	ld b, 1
-	jp l_278
-l_277:
+	jp l_280
+l_279:
 ; 74                     } else {
 ; 75                         b = 0x00;
 	ld b, 0
-l_278:
+l_280:
 ; 76                     }
 ; 77                     recieveNewI2C();
 	call recievenewi2c
@@ -4244,11 +4257,11 @@ l_278:
 	inc de
 ; 85                 l--;
 	dec l
-l_275:
+l_277:
 ; 86             } while ((a = l) > 0);
 	ld a, l
 	or a
-	jp nz, l_274
+	jp nz, l_276
 ; 87             a = 0; // stop byte
 	ld a, 0
 ; 88             *de = a;
@@ -4394,7 +4407,7 @@ transmitnewi2c:
 ; 92         b = 8;
 	ld b, 8
 ; 93         do {
-l_279:
+l_281:
 ; 94             setSDAI2C(a = c);
 	ld a, c
 	call setsdai2c
@@ -4408,8 +4421,8 @@ l_279:
 	ld c, a
 ; 99             b--;
 	dec b
-l_280:
-	jp nz, l_279
+l_282:
+	jp nz, l_281
 ; 100         } while (flag_nz);
 ; 101         
 ; 102         setSDAI2C(a = 0x80);
@@ -4447,7 +4460,7 @@ recievenewi2c:
 ; 118         d = 0x08;
 	ld d, 8
 ; 119         do {
-l_282:
+l_284:
 ; 120             a = c;
 	ld a, c
 ; 121             carry_rotate_left(a, 1);
@@ -4468,8 +4481,8 @@ l_282:
 	dec d
 ; 129             a = d;
 	ld a, d
-l_283:
-	jp nz, l_282
+l_285:
+	jp nz, l_284
 ; 130         } while (flag_nz);
 ; 131 //        setSDAI2C(a = 0x80);
 ; 132 //        a &= 1;
@@ -4513,15 +4526,15 @@ readsdastate:
 	and 1
 ; 157     if (a == 0) {
 	or a
-	jp nz, l_285
+	jp nz, l_287
 ; 158         a = 0x01;
 	ld a, 1
-	jp l_286
-l_285:
+	jp l_288
+l_287:
 ; 159     } else {
 ; 160         a = 0x00;
 	ld a, 0
-l_286:
+l_288:
 	ret
 ; 161     }
 ; 162 }
@@ -4529,24 +4542,24 @@ l_286:
 ; 164 void needAccess() {
 needaccess:
 ; 165     do {
-l_287:
+l_289:
 ; 166         readSDAState();
 	call readsdastate
 ; 167         if (a == 1) {
 	cp 1
-	jp nz, l_290
+	jp nz, l_292
 ; 168             nop();
 	nop
 ; 169             nop();
 	nop
 ; 170             nop();
 	nop
+l_292:
 l_290:
-l_288:
 ; 171         }
 ; 172     } while (a == 0x01);
 	cp 1
-	jp z, l_287
+	jp z, l_289
 	ret
 ; 173 }
 ; 174 
@@ -4566,12 +4579,12 @@ i2cbusy:
 ; 183 void i2cWaitingForAccess() {
 i2cwaitingforaccess:
 ; 184     do {
-l_292:
+l_294:
 ; 185         i2cBusy();
 	call i2cbusy
 ; 186         if (a == 1) {
 	cp 1
-	jp nz, l_295
+	jp nz, l_297
 ; 187             nop();
 	nop
 ; 188             nop();
@@ -4582,12 +4595,12 @@ l_292:
 	nop
 ; 191             nop();
 	nop
+l_297:
 l_295:
-l_293:
 ; 192         }
 ; 193     } while (a == 1);
 	cp 1
-	jp z, l_292
+	jp z, l_294
 	ret
 ; 194 }
 ; 195 
@@ -4598,15 +4611,15 @@ delay5msi2c:
 ; 198         bc = 0x500;
 	ld bc, 1280
 ; 199         do {
-l_297:
+l_299:
 ; 200             bc--;
 	dec bc
 ; 201             a = b;
 	ld a, b
 ; 202             a |= c;
 	or c
-l_298:
-	jp nz, l_297
+l_300:
+	jp nz, l_299
 	pop bc
 	ret
 ; 203         } while (flag_nz);
@@ -4759,1105 +4772,1269 @@ updateftplist:
 ; 73 /// Получаем список файлов и директорий в текущей папке
 ; 74 void getNetFtpListNew() {
 getnetftplistnew:
-; 75     parseFtpListBufferIsCheck = a;
+; 75     //-- Lock
+; 76     if ((a = NetIsLock) == 1) {
+	ld a, (netislock)
+	cp 1
+	jp nz, l_302
+; 77         return;
+	ret
+l_302:
+; 78     }
+; 79     a = 1;
+	ld a, 1
+; 80     NetIsLock = a;
+	ld (netislock), a
+; 81     //--
+; 82     a = 0;
+	ld a, 0
+; 83     parseFtpListBufferIsCheck = a;
 	ld (parseftplistbufferischeck), a
-; 76     do {
-l_300:
-; 77         push_pop(hl) {
+; 84     do {
+l_304:
+; 85         push_pop(hl) {
 	push hl
-; 78             if ((a = parseFtpListBufferIsCheck) == 1) {
+; 86             if ((a = parseFtpListBufferIsCheck) == 1) {
 	ld a, (parseftplistbufferischeck)
 	cp 1
-	jp nz, l_303
-; 79                 delay5msI2C();
+	jp nz, l_307
+; 87                 delay5msI2C();
 	call delay5msi2c
-; 80                 i2cWaitingForAccess();
+; 88                 i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 81                 l = 36; //GET_FTP_LIST_NEXT_NEW, // 36
+; 89                 l = 36; //GET_FTP_LIST_NEXT_NEW, // 36
 	ld l, 36
-; 82                 h = 0;
+; 90                 h = 0;
 	ld h, 0
-; 83                 sendCommand();
+; 91                 sendCommand();
 	call sendcommand
-l_303:
-; 84             }
-; 85             
-; 86             delay5msI2C();
+l_307:
+; 92             }
+; 93             
+; 94             delay5msI2C();
 	call delay5msi2c
-; 87             i2cWaitingForAccess();
+; 95             i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 88             l = 37; //GET_FTP_LIST_NEW, // 37
+; 96             l = 37; //GET_FTP_LIST_NEW, // 37
 	ld l, 37
-; 89             h = 0;
+; 97             h = 0;
 	ld h, 0
-; 90             sendCommand();
+; 98             sendCommand();
 	call sendcommand
-; 91             //
-; 92             delay5msI2C();
+; 99             //
+; 100             delay5msI2C();
 	call delay5msi2c
-; 93             i2cWaitingForAccess();
+; 101             i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 94             l = 15;
+; 102             l = 15;
 	ld l, 15
-; 95             readNewInBuffer();
+; 103             readNewInBuffer();
 	call readnewinbuffer
-; 96             
-; 97             parseFtpListBuffer();
+; 104             
+; 105             parseFtpListBuffer();
 	call parseftplistbuffer
 	pop hl
-l_301:
-; 98         }
-; 99     } while ((a = parseFtpListBufferNext) != 0x5A);
+l_305:
+; 106         }
+; 107     } while ((a = parseFtpListBufferNext) != 0x5A);
 	ld a, (parseftplistbuffernext)
 	cp 90
-	jp nz, l_300
-; 100     a = FtpViewFilesListCount;
+	jp nz, l_304
+; 108     a = FtpViewFilesListCount;
 	ld a, (ftpviewfileslistcount)
-; 101     a++;
+; 109     a++;
 	inc a
-; 102     FtpViewFilesListCount = a;
+; 110     FtpViewFilesListCount = a;
 	ld (ftpviewfileslistcount), a
+; 111     //-- Lock
+; 112     a = 0;
+	ld a, 0
+; 113     NetIsLock = a;
+	ld (netislock), a
 	ret
-; 103 }
-; 104 
-; 105 /// Получить текущий путь FTP
-; 106 void getFtpCurrentPathNew() {
+; 114     //--
+; 115 }
+; 116 
+; 117 /// Получить текущий путь FTP
+; 118 void getFtpCurrentPathNew() {
 getftpcurrentpathnew:
-; 107     push_pop(hl) {
+; 119     push_pop(hl) {
 	push hl
-; 108         do {
-l_305:
-; 109             delay5msI2C();
+; 120         do {
+l_309:
+; 121             delay5msI2C();
 	call delay5msi2c
-; 110             i2cWaitingForAccess();
+; 122             i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 111             l = 38; //GET_FTP_DIR_NEW, // 38
+; 123             l = 38; //GET_FTP_DIR_NEW, // 38
 	ld l, 38
-; 112             h = 0;
+; 124             h = 0;
 	ld h, 0
-; 113             sendCommand();
+; 125             sendCommand();
 	call sendcommand
-; 114             //
-; 115             loadStringToHL(hl = FtpViewPath);
+; 126             //
+; 127             loadStringToHL(hl = FtpViewPath);
 	ld hl, ftpviewpath
 	call loadstringtohl
-l_306:
-; 116         } while ((a = parsePageBufferIsCheck) != 1);
+l_310:
+; 128         } while ((a = parsePageBufferIsCheck) != 1);
 	ld a, (parsepagebufferischeck)
 	cp 1
-	jp nz, l_305
+	jp nz, l_309
 	pop hl
 	ret
-; 117     }
-; 118 }
-; 119 
-; 120 /// Загрузить данные (не больше 255) по адресу HL
-; 121 /// вх. [HL] - Куда записывать результат
-; 122 void loadStringToHL() {
+; 129     }
+; 130 }
+; 131 
+; 132 /// Загрузить данные (не больше 255) по адресу HL
+; 133 /// вх. [HL] - Куда записывать результат
+; 134 void loadStringToHL() {
 loadstringtohl:
-; 123     do {
-l_308:
-; 124         push_pop(hl) {
+; 135     do {
+l_312:
+; 136         push_pop(hl) {
 	push hl
-; 125             // Получить новый буфер
-; 126             delay5msI2C();
+; 137             // Получить новый буфер
+; 138             delay5msI2C();
 	call delay5msi2c
-; 127             i2cWaitingForAccess();
+; 139             i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 128             l = 34; //GET_NEXT_PAGE_BUFFER, // 34
+; 140             l = 34; //GET_NEXT_PAGE_BUFFER, // 34
 	ld l, 34
-; 129             h = 0;
+; 141             h = 0;
 	ld h, 0
-; 130             sendCommand();
+; 142             sendCommand();
 	call sendcommand
-; 131             //
-; 132             delay5msI2C();
+; 143             //
+; 144             delay5msI2C();
 	call delay5msi2c
-; 133             i2cWaitingForAccess();
+; 145             i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 134             l = 15;
+; 146             l = 15;
 	ld l, 15
-; 135             readNewInBuffer(); //ESP_I2S_BUFFER
+; 147             readNewInBuffer(); //ESP_I2S_BUFFER
 	call readnewinbuffer
 	pop hl
-; 136         }
-; 137         // Parse ESP_I2S_BUFFER
-; 138         parsePageBuffer();
+; 148         }
+; 149         // Parse ESP_I2S_BUFFER
+; 150         parsePageBuffer();
 	call parsepagebuffer
-l_309:
-; 139     } while ((a = parsePageBufferNext) != 0x5A);
+l_313:
+; 151     } while ((a = parsePageBufferNext) != 0x5A);
 	ld a, (parsepagebuffernext)
 	cp 90
-	jp nz, l_308
+	jp nz, l_312
 	ret
-; 140 }
-; 141 
-; 142 /// Загрузить данные (не больше 255) по адресу HL
-; 143 /// вх. [HL] - Куда записывать результат
-; 144 void loadNewStringToHL() {
+; 152 }
+; 153 
+; 154 /// Загрузить данные (не больше 255) по адресу HL
+; 155 /// вх. [HL] - Куда записывать результат
+; 156 void loadNewStringToHL() {
 loadnewstringtohl:
-; 145     do {
-l_311:
-; 146         push_pop(hl) {
+; 157     do {
+l_315:
+; 158         push_pop(hl) {
 	push hl
-; 147             // Получить новый буфер
-; 148             delay5msI2C();
+; 159             // Получить новый буфер
+; 160             delay5msI2C();
 	call delay5msi2c
-; 149             i2cWaitingForAccess();
+; 161             i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 150             l = 47; //GET_NEXT_PAGE_BUFFER_NEW, // 47
+; 162             l = 47; //GET_NEXT_PAGE_BUFFER_NEW, // 47
 	ld l, 47
-; 151             h = 0;
+; 163             h = 0;
 	ld h, 0
-; 152             sendCommand();
+; 164             sendCommand();
 	call sendcommand
-; 153             //
-; 154             delay5msI2C();
+; 165             //
+; 166             delay5msI2C();
 	call delay5msi2c
-; 155             i2cWaitingForAccess();
+; 167             i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 156             l = 15;
+; 168             l = 15;
 	ld l, 15
-; 157             readNewInBuffer(); //ESP_I2S_BUFFER
+; 169             readNewInBuffer(); //ESP_I2S_BUFFER
 	call readnewinbuffer
 	pop hl
-; 158         }
-; 159         // Parse ESP_I2S_BUFFER
-; 160         parsePageNewBuffer();
+; 170         }
+; 171         // Parse ESP_I2S_BUFFER
+; 172         parsePageNewBuffer();
 	call parsepagenewbuffer
-; 161         // Если нет ошибок, то следующие данные
-; 162         if ((a = parsePageBufferIsCheck) == 1) {
+; 173         // Если нет ошибок, то следующие данные
+; 174         if ((a = parsePageBufferIsCheck) == 1) {
 	ld a, (parsepagebufferischeck)
 	cp 1
-	jp nz, l_314
-; 163             push_pop(hl) {
+	jp nz, l_318
+; 175             push_pop(hl) {
 	push hl
-; 164                 delay5msI2C();
+; 176                 delay5msI2C();
 	call delay5msi2c
-; 165                 i2cWaitingForAccess();
+; 177                 i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 166                 l = 48; //GET_NEXT_PAGE_BUFFER_NEW_INC, // 48
+; 178                 l = 48; //GET_NEXT_PAGE_BUFFER_NEW_INC, // 48
 	ld l, 48
-; 167                 h = 0;
+; 179                 h = 0;
 	ld h, 0
-; 168                 sendCommand();
+; 180                 sendCommand();
 	call sendcommand
 	pop hl
-l_314:
-l_312:
-; 169             }
-; 170         }
-; 171     } while ((a = parsePageBufferNext) != 0x5A);
+l_318:
+l_316:
+; 181             }
+; 182         }
+; 183     } while ((a = parsePageBufferNext) != 0x5A);
 	ld a, (parsepagebuffernext)
 	cp 90
-	jp nz, l_311
+	jp nz, l_315
 	ret
-; 172 }
-; 173 
-; 174 /// Указать какой файл скачивать
-; 175 void ftpFileDownloadA() {
+; 184 }
+; 185 
+; 186 /// Указать какой файл скачивать
+; 187 void ftpFileDownloadA() {
 ftpfiledownloada:
-; 176     push_pop(de, hl) {
+; 188     push_pop(de, hl) {
 	push de
 	push hl
-; 177         de = ESP_I2S_BUFFER;
+; 189         de = ESP_I2S_BUFFER;
 	ld de, esp_i2s_buffer
-; 178         *de = a;
+; 190         *de = a;
 	ld (de), a
-; 179         //
-; 180         i2cWaitingForAccess();
+; 191         //
+; 192         i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 181         //
-; 182         l = 28; // FILE_DOWNLOAD
+; 193         //
+; 194         l = 28; // FILE_DOWNLOAD
 	ld l, 28
-; 183         h = 1; // 1 байт
+; 195         h = 1; // 1 байт
 	ld h, 1
-; 184         sendCommand();
+; 196         sendCommand();
 	call sendcommand
 	pop hl
 	pop de
 	ret
-; 185     }
-; 186 }
-; 187 
-; 188 /// Скачать указанный файл
-; 189 void ftpFileDownloadNext() {
+; 197     }
+; 198 }
+; 199 
+; 200 /// Скачать указанный файл
+; 201 void ftpFileDownloadNext() {
 ftpfiledownloadnext:
-; 190     push_pop(hl) {
+; 202     push_pop(hl) {
 	push hl
-; 191         a = 0x01;
+; 203         a = 0x01;
 	ld a, 1
-; 192         parseFtpFileLoadViewCheckSumState = a;
+; 204         parseFtpFileLoadViewCheckSumState = a;
 	ld (parseftpfileloadviewchecksumstat), a
-; 193         do {
-l_316:
-; 194             // Если контрольная сумма верна просим следующий буфер
-; 195             if ((a = parseFtpFileLoadViewCheckSumState) == 0x01) {
+; 205         a = 0;
+	ld a, 0
+; 206         NetError = a;
+	ld (neterror), a
+; 207         a = 10;
+	ld a, 10
+; 208         NetLoopCount = a;
+	ld (netloopcount), a
+; 209         do {
+l_320:
+; 210             // Если контрольная сумма верна просим следующий буфер
+; 211             if ((a = parseFtpFileLoadViewCheckSumState) == 0x01) {
 	ld a, (parseftpfileloadviewchecksumstat)
 	cp 1
-	jp nz, l_319
-; 196                 //delay5msI2C();
-; 197                 i2cWaitingForAccess();
+	jp nz, l_323
+; 212                 a = 10;
+	ld a, 10
+; 213                 NetLoopCount = a;
+	ld (netloopcount), a
+; 214                 //--
+; 215                 i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 198                 l = 29;
+; 216                 l = 29;
 	ld l, 29
-; 199                 h = 0;
+; 217                 h = 0;
 	ld h, 0
-; 200                 sendCommand();
+; 218                 sendCommand();
 	call sendcommand
-l_319:
-; 201             }
-; 202             
-; 203             // Получить буфер
-; 204             //delay5msI2C();
-; 205             i2cWaitingForAccess();
-	call i2cwaitingforaccess
-; 206             l = 30;
+	jp l_324
+l_323:
+; 219             } else {
+; 220                 a = NetLoopCount;
+	ld a, (netloopcount)
+; 221                 a--;
+	dec a
+; 222                 NetLoopCount = a;
+	ld (netloopcount), a
+; 223                 if (a == 0) {
+	or a
+	jp nz, l_325
+; 224                     a = 1;
+	ld a, 1
+; 225                     NetError = a;
+	ld (neterror), a
+l_325:
+l_324:
+; 226                 }
+; 227             }
+; 228             
+; 229             if ((a = NetError) == 0) {
+	ld a, (neterror)
+	or a
+	jp nz, l_327
+; 230                 // Получить буфер
+; 231                 //i2cWaitingForAccess();
+; 232                 l = 30;
 	ld l, 30
-; 207             h = 0;
+; 233                 h = 0;
 	ld h, 0
-; 208             sendCommand();
+; 234                 sendCommand();
 	call sendcommand
-; 209             //
-; 210             //delay5msI2C();
-; 211             i2cWaitingForAccess();
-	call i2cwaitingforaccess
-; 212             l = 15;
+; 235                 //
+; 236                 //delay5msI2C();
+; 237                 //i2cWaitingForAccess();
+; 238                 l = 15;
 	ld l, 15
-; 213             readNewInBuffer();
+; 239                 readNewInBuffer();
 	call readnewinbuffer
-; 214             
-; 215             // Распарсить буфер и пррверить контрольную сумму
-; 216             ftpFileDownloadParse();
+; 240                 
+; 241                 // Распарсить буфер и пррверить контрольную сумму
+; 242                 ftpFileDownloadParse();
 	call ftpfiledownloadparse
-; 217             
-; 218             LoadViewShowProgressA(a = LoadViewProgress);
+; 243                 if ((a = parseFtpFileLoadViewCheckSumState) == 0x01) {
+	ld a, (parseftpfileloadviewchecksumstat)
+	cp 1
+	jp nz, l_329
+; 244                     LoadViewShowProgressA(a = LoadViewProgress);
 	ld a, (loadviewprogress)
 	call loadviewshowprogressa
-l_317:
-; 219         } while ((a = parseFtpFileLoadViewIsNextData) != 0x5A);
+l_329:
+	jp l_328
+l_327:
+; 245                 }
+; 246             } else {
+; 247                 // Error!!!!
+; 248                 a = 0x5A;
+	ld a, 90
+; 249                 parseFtpFileLoadViewIsNextData = a;
+	ld (parseftpfileloadviewisnextdata), a
+l_328:
+l_321:
+; 250             }
+; 251         } while ((a = parseFtpFileLoadViewIsNextData) != 0x5A);
 	ld a, (parseftpfileloadviewisnextdata)
 	cp 90
-	jp nz, l_316
+	jp nz, l_320
 	pop hl
 	ret
-; 220     }
-; 221 }
-; 222 
-; 223 /// Получить текущее имя сети
-; 224 void getSSIDValue() {
+; 252     }
+; 253 }
+; 254 
+; 255 /// Получить текущее имя сети
+; 256 void getSSIDValue() {
 getssidvalue:
-; 225     push_pop(hl) {
+; 257     push_pop(hl) {
 	push hl
-; 226         do {
-l_321:
-; 227             delay5msI2C();
+; 258         do {
+l_331:
+; 259             delay5msI2C();
 	call delay5msi2c
-; 228             i2cWaitingForAccess();
+; 260             i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 229             l = 6;
+; 261             l = 6;
 	ld l, 6
-; 230             h = 0;
+; 262             h = 0;
 	ld h, 0
-; 231             sendCommand();
+; 263             sendCommand();
 	call sendcommand
-; 232             //
-; 233             loadStringToHL(hl = WifiStateViewSsidVal);
+; 264             //
+; 265             loadStringToHL(hl = WifiStateViewSsidVal);
 	ld hl, wifistateviewssidval
 	call loadstringtohl
-l_322:
-; 234         } while ((a = parsePageBufferIsCheck) != 1);
+l_332:
+; 266         } while ((a = parsePageBufferIsCheck) != 1);
 	ld a, (parsepagebufferischeck)
 	cp 1
-	jp nz, l_321
+	jp nz, l_331
 	pop hl
 	ret
-; 235     }
-; 236 }
-; 237 
-; 238 /// Получить IP_Address
-; 239 void getSSIDIPAddress() {
+; 267     }
+; 268 }
+; 269 
+; 270 /// Получить IP_Address
+; 271 void getSSIDIPAddress() {
 getssidipaddress:
-; 240     push_pop(hl) {
+; 272     push_pop(hl) {
 	push hl
-; 241         do {
-l_324:
-; 242             delay5msI2C();
+; 273         do {
+l_334:
+; 274             delay5msI2C();
 	call delay5msi2c
-; 243             i2cWaitingForAccess();
+; 275             i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 244             l = 12;
+; 276             l = 12;
 	ld l, 12
-; 245             h = 0;
+; 277             h = 0;
 	ld h, 0
-; 246             sendCommand();
+; 278             sendCommand();
 	call sendcommand
-; 247             //
-; 248             loadStringToHL(hl = WifiStateViewIpVal);
+; 279             //
+; 280             loadStringToHL(hl = WifiStateViewIpVal);
 	ld hl, wifistateviewipval
 	call loadstringtohl
-l_325:
-; 249         } while ((a = parsePageBufferIsCheck) != 1);
+l_335:
+; 281         } while ((a = parsePageBufferIsCheck) != 1);
 	ld a, (parsepagebufferischeck)
 	cp 1
-	jp nz, l_324
+	jp nz, l_334
 	pop hl
 	ret
-; 250     }
-; 251 }
-; 252 
-; 253 /// Получить WiFI пароль
-; 254 void getSSIDPassword() {
+; 282     }
+; 283 }
+; 284 
+; 285 /// Получить WiFI пароль
+; 286 void getSSIDPassword() {
 getssidpassword:
-; 255     push_pop(hl) {
+; 287     push_pop(hl) {
 	push hl
-; 256         do {
-l_327:
-; 257             delay5msI2C();
+; 288         do {
+l_337:
+; 289             delay5msI2C();
 	call delay5msi2c
-; 258             i2cWaitingForAccess();
+; 290             i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 259             l = 40; // GET_SSID_PASSWORD_NEW, // 40
+; 291             l = 40; // GET_SSID_PASSWORD_NEW, // 40
 	ld l, 40
-; 260             h = 0;
+; 292             h = 0;
 	ld h, 0
-; 261             sendCommand();
+; 293             sendCommand();
 	call sendcommand
-; 262             //
-; 263             loadStringToHL(hl = WifiStateViewPassVal);
+; 294             //
+; 295             loadStringToHL(hl = WifiStateViewPassVal);
 	ld hl, wifistateviewpassval
 	call loadstringtohl
-l_328:
-; 264         } while ((a = parsePageBufferIsCheck) != 1);
+l_338:
+; 296         } while ((a = parsePageBufferIsCheck) != 1);
 	ld a, (parsepagebufferischeck)
 	cp 1
-	jp nz, l_327
+	jp nz, l_337
 	pop hl
 	ret
-; 265     }
-; 266 }
-; 267 
-; 268 /// Запросить обновление списка сетей
-; 269 void needUpdateSSIDList() {
+; 297     }
+; 298 }
+; 299 
+; 300 /// Запросить обновление списка сетей
+; 301 void needUpdateSSIDList() {
 needupdatessidlist:
-; 270     push_pop(hl) {
+; 302     push_pop(hl) {
 	push hl
-; 271         delay5msI2C();
+; 303         delay5msI2C();
 	call delay5msi2c
-; 272         i2cWaitingForAccess();
+; 304         i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 273         l = 4;
+; 305         l = 4;
 	ld l, 4
-; 274         h = 0;
+; 306         h = 0;
 	ld h, 0
-; 275         sendCommand();
+; 307         sendCommand();
 	call sendcommand
 	pop hl
 	ret
-; 276     }
-; 277 }
-; 278 
-; 279 /// Получить список сетей
-; 280 void getSsidList() {
+; 308     }
+; 309 }
+; 310 
+; 311 /// Получить список сетей
+; 312 void getSsidList() {
 getssidlist:
-; 281     push_pop(hl) {
+; 313     push_pop(hl) {
 	push hl
-; 282         do {
-l_330:
-; 283             // Получаем данные пл пакету
-; 284             do {
-l_333:
-; 285                 i2cWaitingForAccess();
+; 314         do {
+l_340:
+; 315             // Получаем данные пл пакету
+; 316             do {
+l_343:
+; 317                 i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 286                 l = 42; //GET_SSID_NEW_LIST_NEXT, // 42
+; 318                 l = 42; //GET_SSID_NEW_LIST_NEXT, // 42
 	ld l, 42
-; 287                 h = 0;
+; 319                 h = 0;
 	ld h, 0
-; 288                 sendCommand();
+; 320                 sendCommand();
 	call sendcommand
-; 289                 //
-; 290                 //delay5msI2C();
-; 291                 i2cWaitingForAccess();
+; 321                 //
+; 322                 //delay5msI2C();
+; 323                 i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 292                 l = 6;
+; 324                 l = 6;
 	ld l, 6
-; 293                 readNewInBuffer();
+; 325                 readNewInBuffer();
 	call readnewinbuffer
-; 294                 SsidListNextParser();
+; 326                 SsidListNextParser();
 	call ssidlistnextparser
-l_334:
-; 295             } while ((a = SsidListNextParserCheckSumState) == 0);
+l_344:
+; 327             } while ((a = SsidListNextParserCheckSumState) == 0);
 	ld a, (ssidlistnextparserchecksumstate)
 	or a
-	jp z, l_333
-; 296             // Получаем строку с именем сети
-; 297             loadNewStringToHL(hl = SsidListNextParserPoint);
+	jp z, l_343
+; 328             // Получаем строку с именем сети
+; 329             loadNewStringToHL(hl = SsidListNextParserPoint);
 	ld hl, (ssidlistnextparserpoint)
 	call loadnewstringtohl
-; 298             // Просим следующий
-; 299             i2cWaitingForAccess();
+; 330             // Просим следующий
+; 331             i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 300             l = 46; //GET_SSID_NEW_LIST_Next_Inc, // 46
+; 332             l = 46; //GET_SSID_NEW_LIST_Next_Inc, // 46
 	ld l, 46
-; 301             h = 0;
+; 333             h = 0;
 	ld h, 0
-; 302             sendCommand();
+; 334             sendCommand();
 	call sendcommand
-l_331:
-; 303         } while ((a = SsidListNextParserNext) != 0x5A);
+l_341:
+; 335         } while ((a = SsidListNextParserNext) != 0x5A);
 	ld a, (ssidlistnextparsernext)
 	cp 90
-	jp nz, l_330
+	jp nz, l_340
 	pop hl
 	ret
-; 304     }
-; 305 }
-; 306 
-; 307 /// Получить статус WiFI TODO пепеделать!!!
-; 308 void getWifiState() {
+; 336     }
+; 337 }
+; 338 
+; 339 /// Получить статус WiFI TODO пепеделать!!!
+; 340 void getWifiState() {
 getwifistate:
-; 309     push_pop(hl) {
+; 341     push_pop(hl) {
 	push hl
-; 310         push_pop(de) {
+; 342         push_pop(de) {
 	push de
-; 311             push_pop(bc) {
+; 343             push_pop(bc) {
 	push bc
-; 312                 delay5msI2C();
+; 344                 delay5msI2C();
 	call delay5msi2c
-; 313                 i2cWaitingForAccess();
+; 345                 i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 314                 l = 11; // STATE_SSID, //11
+; 346                 l = 11; // STATE_SSID, //11
 	ld l, 11
-; 315                 h = 0;
+; 347                 h = 0;
 	ld h, 0
-; 316                 sendCommand();
+; 348                 sendCommand();
 	call sendcommand
-; 317                 //
-; 318                 delay5msI2C();
+; 349                 //
+; 350                 delay5msI2C();
 	call delay5msi2c
-; 319                 i2cWaitingForAccess();
+; 351                 i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 320                 l = 3;
+; 352                 l = 3;
 	ld l, 3
-; 321                 readNewInBuffer();
+; 353                 readNewInBuffer();
 	call readnewinbuffer
-; 322                 //
-; 323                 a = WifiStateViewSSIDIsConnected;
+; 354                 //
+; 355                 a = WifiStateViewSSIDIsConnected;
 	ld a, (wifistateviewssidisconnected)
-; 324                 h = a;
+; 356                 h = a;
 	ld h, a
-; 325                 de = ESP_I2S_BUFFER;
+; 357                 de = ESP_I2S_BUFFER;
 	ld de, esp_i2s_buffer
-; 326                 a = *de;
+; 358                 a = *de;
 	ld a, (de)
-; 327                 a &= 0x01;
+; 359                 a &= 0x01;
 	and 1
-; 328                 WifiStateViewSSIDIsConnected = a;
+; 360                 WifiStateViewSSIDIsConnected = a;
 	ld (wifistateviewssidisconnected), a
-; 329                 if(a != h){
+; 361                 if(a != h){
 	cp h
-	jp z, l_336
-; 330                     a = 0x01;
+	jp z, l_346
+; 362                     a = 0x01;
 	ld a, 1
-; 331                     WiFiNetStateChange = a;
+; 363                     WiFiNetStateChange = a;
 	ld (wifinetstatechange), a
-l_336:
+l_346:
 	pop bc
 	pop de
 	pop hl
 	ret
-; 332                 }
-; 333             }
-; 334         }
-; 335     }
-; 336 }
-; 337 
-; 338 /// Получить MAC_Address
-; 339 void getSSIDMacAddress() {
+; 364                 }
+; 365             }
+; 366         }
+; 367     }
+; 368 }
+; 369 
+; 370 /// Получить MAC_Address
+; 371 void getSSIDMacAddress() {
 getssidmacaddress:
-; 340     push_pop(hl) {
+; 372     push_pop(hl) {
 	push hl
-; 341         do {
-l_338:
-; 342             delay5msI2C();
+; 373         do {
+l_348:
+; 374             delay5msI2C();
 	call delay5msi2c
-; 343             i2cWaitingForAccess();
+; 375             i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 344             l = 13;
+; 376             l = 13;
 	ld l, 13
-; 345             h = 0;
+; 377             h = 0;
 	ld h, 0
-; 346             sendCommand();
+; 378             sendCommand();
 	call sendcommand
-; 347             //
-; 348             loadStringToHL(hl = WifiStateViewMacVal);
+; 379             //
+; 380             loadStringToHL(hl = WifiStateViewMacVal);
 	ld hl, wifistateviewmacval
 	call loadstringtohl
-l_339:
-; 349         } while ((a = parsePageBufferIsCheck) != 1);
+l_349:
+; 381         } while ((a = parsePageBufferIsCheck) != 1);
 	ld a, (parsepagebufferischeck)
 	cp 1
-	jp nz, l_338
+	jp nz, l_348
 	pop hl
 	ret
-; 350     }
-; 351 }
-; 352 
-; 353 /// Получить статус FTP TODO пепеделать!!!
-; 354 void getFtpState() {
+; 382     }
+; 383 }
+; 384 
+; 385 /// Получить статус FTP TODO пепеделать!!!
+; 386 void getFtpState() {
 getftpstate:
-; 355     push_pop(hl) {
+; 387     push_pop(hl) {
 	push hl
-; 356         push_pop(de) {
+; 388         push_pop(de) {
 	push de
-; 357             push_pop(bc) {
+; 389             push_pop(bc) {
 	push bc
-; 358                 delay5msI2C();
+; 390                 delay5msI2C();
 	call delay5msi2c
-; 359                 i2cWaitingForAccess();
+; 391                 i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 360                 l = 24;
+; 392                 l = 24;
 	ld l, 24
-; 361                 h = 0;
+; 393                 h = 0;
 	ld h, 0
-; 362                 sendCommand();
+; 394                 sendCommand();
 	call sendcommand
-; 363                 //
-; 364                 delay5msI2C();
+; 395                 //
+; 396                 delay5msI2C();
 	call delay5msi2c
-; 365                 i2cWaitingForAccess();
+; 397                 i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 366                 l = 4;
+; 398                 l = 4;
 	ld l, 4
-; 367                 readNewInBuffer();
+; 399                 readNewInBuffer();
 	call readnewinbuffer
-; 368                 //
-; 369                 a = FtpStateViewStatus;
+; 400                 //
+; 401                 a = FtpStateViewStatus;
 	ld a, (ftpstateviewstatus)
-; 370                 h = a;
+; 402                 h = a;
 	ld h, a
-; 371                 de = ESP_I2S_BUFFER;
+; 403                 de = ESP_I2S_BUFFER;
 	ld de, esp_i2s_buffer
-; 372                 a = *de;
+; 404                 a = *de;
 	ld a, (de)
-; 373                 a &= 0x01;
+; 405                 a &= 0x01;
 	and 1
-; 374                 FtpStateViewStatus = a;
+; 406                 FtpStateViewStatus = a;
 	ld (ftpstateviewstatus), a
-; 375                 if(a != h){
+; 407                 if(a != h){
 	cp h
-	jp z, l_341
-; 376                     a = 0x01;
+	jp z, l_351
+; 408                     a = 0x01;
 	ld a, 1
-; 377                     FtpNetStateChange = a;
+; 409                     FtpNetStateChange = a;
 	ld (ftpnetstatechange), a
-l_341:
+l_351:
 	pop bc
 	pop de
 	pop hl
 	ret
-; 378                 }
-; 379             }
-; 380         }
-; 381     }
-; 382 }
-; 383 
-; 384 /// Подключиться в WiFi
-; 385 void needSsidConnect() {
+; 410                 }
+; 411             }
+; 412         }
+; 413     }
+; 414 }
+; 415 
+; 416 /// Подключиться в WiFi
+; 417 void needSsidConnect() {
 needssidconnect:
-; 386     push_pop(hl) {
+; 418     push_pop(hl) {
 	push hl
-; 387         delay5msI2C();
+; 419         delay5msI2C();
 	call delay5msi2c
-; 388         i2cWaitingForAccess();
+; 420         i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 389         l = 10;
+; 421         l = 10;
 	ld l, 10
-; 390         h = 0;
+; 422         h = 0;
 	ld h, 0
-; 391         sendCommand();
+; 423         sendCommand();
 	call sendcommand
 	pop hl
 	ret
-; 392     }
-; 393 }
-; 394 
-; 395 /// Подключиться в FTP
-; 396 void needFtpConnect() {
+; 424     }
+; 425 }
+; 426 
+; 427 /// Подключиться в FTP
+; 428 void needFtpConnect() {
 needftpconnect:
-; 397     push_pop(hl) {
+; 429     push_pop(hl) {
 	push hl
-; 398         delay5msI2C();
+; 430         delay5msI2C();
 	call delay5msi2c
-; 399         i2cWaitingForAccess();
+; 431         i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 400         l = 23;
+; 432         l = 23;
 	ld l, 23
-; 401         h = 0;
+; 433         h = 0;
 	ld h, 0
-; 402         sendCommand();
+; 434         sendCommand();
 	call sendcommand
 	pop hl
 	ret
-; 403     }
-; 404 }
-; 405 
-; 406 /// Получить FTP URL
-; 407 void getFTPUrl() {
+; 435     }
+; 436 }
+; 437 
+; 438 /// Получить FTP URL
+; 439 void getFTPUrl() {
 getftpurl:
-; 408     push_pop(hl) {
+; 440     push_pop(hl) {
 	push hl
-; 409         do {
-l_343:
-; 410             delay5msI2C();
+; 441         do {
+l_353:
+; 442             delay5msI2C();
 	call delay5msi2c
-; 411             i2cWaitingForAccess();
+; 443             i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 412             l = 39; //GET_FTPURL_NEW, // 39
+; 444             l = 39; //GET_FTPURL_NEW, // 39
 	ld l, 39
-; 413             h = 0;
+; 445             h = 0;
 	ld h, 0
-; 414             sendCommand();
+; 446             sendCommand();
 	call sendcommand
-; 415             //
-; 416             loadStringToHL(hl = FtpStateViewIpValue);
+; 447             //
+; 448             loadStringToHL(hl = FtpStateViewIpValue);
 	ld hl, ftpstateviewipvalue
 	call loadstringtohl
-l_344:
-; 417         } while ((a = parsePageBufferIsCheck) != 1);
+l_354:
+; 449         } while ((a = parsePageBufferIsCheck) != 1);
 	ld a, (parsepagebufferischeck)
 	cp 1
-	jp nz, l_343
+	jp nz, l_353
 	pop hl
 	ret
-; 418     }
-; 419 }
-; 420 
-; 421 /// Получить FTP HomeDir
-; 422 void getFTPHomeDir() {
+; 450     }
+; 451 }
+; 452 
+; 453 /// Получить FTP HomeDir
+; 454 void getFTPHomeDir() {
 getftphomedir:
-; 423     push_pop(hl) {
+; 455     push_pop(hl) {
 	push hl
-; 424         do {
-l_346:
-; 425             delay5msI2C();
+; 456         do {
+l_356:
+; 457             delay5msI2C();
 	call delay5msi2c
-; 426             i2cWaitingForAccess();
+; 458             i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 427             l = 41; //GET_FTP_HOMEDIR_NEW, // 41
+; 459             l = 41; //GET_FTP_HOMEDIR_NEW, // 41
 	ld l, 41
-; 428             h = 0;
+; 460             h = 0;
 	ld h, 0
-; 429             sendCommand();
+; 461             sendCommand();
 	call sendcommand
-; 430             //
-; 431             loadStringToHL(hl = FtpSettingsViewValueHomeDir);
+; 462             //
+; 463             loadStringToHL(hl = FtpSettingsViewValueHomeDir);
 	ld hl, ftpsettingsviewvaluehomedir
 	call loadstringtohl
-l_347:
-; 432         } while ((a = parsePageBufferIsCheck) != 1);
+l_357:
+; 464         } while ((a = parsePageBufferIsCheck) != 1);
 	ld a, (parsepagebufferischeck)
 	cp 1
-	jp nz, l_346
+	jp nz, l_356
 	pop hl
 	ret
-; 433     }
-; 434 }
-; 435 
-; 436 /// Получить FTP Port
-; 437 void getFTPPort() {
+; 465     }
+; 466 }
+; 467 
+; 468 /// Получить FTP Port
+; 469 void getFTPPort() {
 getftpport:
-; 438     push_pop(hl) {
+; 470     push_pop(hl) {
 	push hl
-; 439         do {
-l_349:
-; 440             delay5msI2C();
+; 471         do {
+l_359:
+; 472             delay5msI2C();
 	call delay5msi2c
-; 441             i2cWaitingForAccess();
+; 473             i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 442             l = 43; //GET_FTP_Port_NEW, // 43
+; 474             l = 43; //GET_FTP_Port_NEW, // 43
 	ld l, 43
-; 443             h = 0;
+; 475             h = 0;
 	ld h, 0
-; 444             sendCommand();
+; 476             sendCommand();
 	call sendcommand
-; 445             //
-; 446             loadStringToHL(hl = FtpSettingsViewValuePort);
+; 477             //
+; 478             loadStringToHL(hl = FtpSettingsViewValuePort);
 	ld hl, ftpsettingsviewvalueport
 	call loadstringtohl
-l_350:
-; 447         } while ((a = parsePageBufferIsCheck) != 1);
+l_360:
+; 479         } while ((a = parsePageBufferIsCheck) != 1);
 	ld a, (parsepagebufferischeck)
 	cp 1
-	jp nz, l_349
+	jp nz, l_359
 	pop hl
 	ret
-; 448     }
-; 449 }
-; 450 
-; 451 /// Получить FTP User
-; 452 void getFTPUser() {
+; 480     }
+; 481 }
+; 482 
+; 483 /// Получить FTP User
+; 484 void getFTPUser() {
 getftpuser:
-; 453     push_pop(hl) {
+; 485     push_pop(hl) {
 	push hl
-; 454         do {
-l_352:
-; 455             delay5msI2C();
+; 486         do {
+l_362:
+; 487             delay5msI2C();
 	call delay5msi2c
-; 456             i2cWaitingForAccess();
+; 488             i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 457             l = 44; //GET_FTP_User_NEW, // 44
+; 489             l = 44; //GET_FTP_User_NEW, // 44
 	ld l, 44
-; 458             h = 0;
+; 490             h = 0;
 	ld h, 0
-; 459             sendCommand();
+; 491             sendCommand();
 	call sendcommand
-; 460             //
-; 461             loadStringToHL(hl = FtpSettingsViewValueUser);
+; 492             //
+; 493             loadStringToHL(hl = FtpSettingsViewValueUser);
 	ld hl, ftpsettingsviewvalueuser
 	call loadstringtohl
-l_353:
-; 462         } while ((a = parsePageBufferIsCheck) != 1);
+l_363:
+; 494         } while ((a = parsePageBufferIsCheck) != 1);
 	ld a, (parsepagebufferischeck)
 	cp 1
-	jp nz, l_352
+	jp nz, l_362
 	pop hl
 	ret
-; 463     }
-; 464 }
-; 465 
-; 466 /// Получить FTP Password
-; 467 void getFTPPassword() {
+; 495     }
+; 496 }
+; 497 
+; 498 /// Получить FTP Password
+; 499 void getFTPPassword() {
 getftppassword:
-; 468     push_pop(hl) {
+; 500     push_pop(hl) {
 	push hl
-; 469         do {
-l_355:
-; 470             delay5msI2C();
+; 501         do {
+l_365:
+; 502             delay5msI2C();
 	call delay5msi2c
-; 471             i2cWaitingForAccess();
+; 503             i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 472             l = 45; //GET_FTP_Password_NEW, // 45
+; 504             l = 45; //GET_FTP_Password_NEW, // 45
 	ld l, 45
-; 473             h = 0;
+; 505             h = 0;
 	ld h, 0
-; 474             sendCommand();
+; 506             sendCommand();
 	call sendcommand
-; 475             //
-; 476             loadStringToHL(hl = FtpSettingsViewValuePass);
+; 507             //
+; 508             loadStringToHL(hl = FtpSettingsViewValuePass);
 	ld hl, ftpsettingsviewvaluepass
 	call loadstringtohl
-l_356:
-; 477         } while ((a = parsePageBufferIsCheck) != 1);
+l_366:
+; 509         } while ((a = parsePageBufferIsCheck) != 1);
 	ld a, (parsepagebufferischeck)
 	cp 1
-	jp nz, l_355
+	jp nz, l_365
 	pop hl
 	ret
-; 478     }
-; 479 }
-; 480 
-; 481 /// Установить имя сети по номеру в списке
-; 482 /// вх. [A] - номер сети
-; 483 void setSSIDNumberA() {
+; 510     }
+; 511 }
+; 512 
+; 513 /// Установить имя сети по номеру в списке
+; 514 /// вх. [A] - номер сети
+; 515 void setSSIDNumberA() {
 setssidnumbera:
-; 484     push_pop(de) {
+; 516     push_pop(de) {
 	push de
-; 485         push_pop(hl) {
+; 517         push_pop(hl) {
 	push hl
-; 486             de = ESP_I2S_BUFFER;
+; 518             de = ESP_I2S_BUFFER;
 	ld de, esp_i2s_buffer
-; 487             *de = a;
+; 519             *de = a;
 	ld (de), a
-; 488             //
-; 489             delay5msI2C();
+; 520             //
+; 521             delay5msI2C();
 	call delay5msi2c
-; 490             i2cWaitingForAccess();
+; 522             i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 491             //
-; 492             l = 7; // SET_SSID
+; 523             //
+; 524             l = 7; // SET_SSID
 	ld l, 7
-; 493             h = 1; // 1 байт
+; 525             h = 1; // 1 байт
 	ld h, 1
-; 494             sendCommand();
+; 526             sendCommand();
 	call sendcommand
 	pop hl
 	pop de
 	ret
-; 495         }
-; 496     }
-; 497 }
-; 498 
-; 499 /// Отправка 16 байт буфера из HL на плату
-; 500 /// A - код операции
-; 501 /// ------ Структура ---------------
-; 502 /// 1 byte : Action
-; 503 /// 2 byte : Next (0x01 = Next; 0x5A - Stop)
-; 504 /// 3..10 bytes : Data
-; 505 /// 11 byte : SUM
-; 506 void sendHLToA() {
+; 527         }
+; 528     }
+; 529 }
+; 530 
+; 531 /// Отправка 16 байт буфера из HL на плату
+; 532 /// A - код операции
+; 533 /// ------ Структура ---------------
+; 534 /// 1 byte : Action
+; 535 /// 2 byte : Next (0x01 = Next; 0x5A - Stop)
+; 536 /// 3..10 bytes : Data
+; 537 /// 11 byte : SUM
+; 538 void sendHLToA() {
 sendhltoa:
-; 507     push_pop(bc, de, hl) {
+; 539     push_pop(bc, de, hl) {
 	push bc
 	push de
 	push hl
-; 508         // Calc
-; 509         sendHLActionKey = a;
+; 540         // Calc
+; 541         sendHLActionKey = a;
 	ld (sendhlactionkey), a
-; 510         sendHLPoint = hl;
+; 542         sendHLPoint = hl;
 	ld (sendhlpoint), hl
-; 511         // Send
-; 512         c = 0;
+; 543         // Send
+; 544         c = 0;
 	ld c, 0
-; 513         do {
-l_358:
-; 514             hl = sendHLPoint;
+; 545         do {
+l_368:
+; 546             hl = sendHLPoint;
 	ld hl, (sendhlpoint)
-; 515             if ((a = c) == 1) {
+; 547             if ((a = c) == 1) {
 	ld a, c
 	cp 1
-	jp nz, l_361
-; 516                 de = 8;
+	jp nz, l_371
+; 548                 de = 8;
 	ld de, 8
-; 517                 hl += de;
+; 549                 hl += de;
 	add hl, de
-l_361:
-; 518             }
-; 519             // -- Create buffer
-; 520             de = ESP_I2S_BUFFER;
+l_371:
+; 550             }
+; 551             // -- Create buffer
+; 552             de = ESP_I2S_BUFFER;
 	ld de, esp_i2s_buffer
-; 521             // Action
-; 522             a = sendHLActionKey;
+; 553             // Action
+; 554             a = sendHLActionKey;
 	ld a, (sendhlactionkey)
-; 523             *de = a;
+; 555             *de = a;
 	ld (de), a
-; 524             de++;
+; 556             de++;
 	inc de
-; 525             // Next
-; 526             if ((a = c) == 0) {
+; 557             // Next
+; 558             if ((a = c) == 0) {
 	ld a, c
 	or a
-	jp nz, l_363
-; 527                 a = 0x01;
+	jp nz, l_373
+; 559                 a = 0x01;
 	ld a, 1
-	jp l_364
-l_363:
-; 528             } else {
-; 529                 a = 0x5A;
+	jp l_374
+l_373:
+; 560             } else {
+; 561                 a = 0x5A;
 	ld a, 90
-l_364:
-; 530             }
-; 531             *de = a;
+l_374:
+; 562             }
+; 563             *de = a;
 	ld (de), a
-; 532             de++;
+; 564             de++;
 	inc de
-; 533             // Data
-; 534             b = 8;
+; 565             // Data
+; 566             b = 8;
 	ld b, 8
-; 535             do {
-l_365:
-; 536                 a = *hl;
+; 567             do {
+l_375:
+; 568                 a = *hl;
 	ld a, (hl)
-; 537                 *de = a;
+; 569                 *de = a;
 	ld (de), a
-; 538                 de++;
+; 570                 de++;
 	inc de
-; 539                 hl++;
+; 571                 hl++;
 	inc hl
-; 540                 b--;
+; 572                 b--;
 	dec b
-l_366:
-; 541             } while ((a = b) > 0);
+l_376:
+; 573             } while ((a = b) > 0);
 	ld a, b
 	or a
-	jp nz, l_365
-; 542             // SUM
-; 543             de = ESP_I2S_BUFFER;
+	jp nz, l_375
+; 574             // SUM
+; 575             de = ESP_I2S_BUFFER;
 	ld de, esp_i2s_buffer
-; 544             b = 10;
+; 576             b = 10;
 	ld b, 10
-; 545             h = 0;
+; 577             h = 0;
 	ld h, 0
-; 546             do {
-l_368:
-; 547                 a = *de;
+; 578             do {
+l_378:
+; 579                 a = *de;
 	ld a, (de)
-; 548                 a += h;
+; 580                 a += h;
 	add h
-; 549                 h = a;
+; 581                 h = a;
 	ld h, a
-; 550                 de++;
+; 582                 de++;
 	inc de
-; 551                 b--;
+; 583                 b--;
 	dec b
-l_369:
-; 552             } while ((a = b) > 0);
+l_379:
+; 584             } while ((a = b) > 0);
 	ld a, b
 	or a
-	jp nz, l_368
-; 553             a = h;
+	jp nz, l_378
+; 585             a = h;
 	ld a, h
-; 554             *de = a;
+; 586             *de = a;
 	ld (de), a
-; 555             // -- Send
-; 556             push_pop(hl) {
+; 587             // -- Send
+; 588             push_pop(hl) {
 	push hl
-; 557                 i2cWaitingForAccess();
+; 589                 i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 558                 l = 49; // SET_STR16_FOR_KEY_PAGE, // 49
+; 590                 l = 49; // SET_STR16_FOR_KEY_PAGE, // 49
 	ld l, 49
-; 559                 h = 11;
+; 591                 h = 11;
 	ld h, 11
-; 560                 sendCommand();
+; 592                 sendCommand();
 	call sendcommand
 	pop hl
-; 561             }
-; 562             // -- Get status
-; 563             push_pop(hl) {
+; 593             }
+; 594             // -- Get status
+; 595             push_pop(hl) {
 	push hl
-; 564                 // Получаем ответ
-; 565                 do {
-l_371:
-; 566                     i2cWaitingForAccess();
+; 596                 // Получаем ответ
+; 597                 do {
+l_381:
+; 598                     i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 567                     l = 50; // GET_STR16_FOR_KEY_PAGE_STATE, // 50
+; 599                     l = 50; // GET_STR16_FOR_KEY_PAGE_STATE, // 50
 	ld l, 50
-; 568                     h = 0;
+; 600                     h = 0;
 	ld h, 0
-; 569                     sendCommand();
+; 601                     sendCommand();
 	call sendcommand
-; 570                     //
-; 571                     i2cWaitingForAccess();
+; 602                     //
+; 603                     i2cWaitingForAccess();
 	call i2cwaitingforaccess
-; 572                     l = 4;
+; 604                     l = 4;
 	ld l, 4
-; 573                     readNewInBuffer();
+; 605                     readNewInBuffer();
 	call readnewinbuffer
-; 574                     sendHLToAParser();
+; 606                     sendHLToAParser();
 	call sendhltoaparser
-l_372:
-; 575                 } while ((a = sendHLToAParserCheckSumState) == 0);
+l_382:
+; 607                 } while ((a = sendHLToAParserCheckSumState) == 0);
 	ld a, (sendhltoaparserchecksumstate)
 	or a
-	jp z, l_371
-; 576                 // Если ОК , то следующая операция
-; 577                 if ((a = sendHLToAParserIsOk) == 1) {
+	jp z, l_381
+; 608                 // Если ОК , то следующая операция
+; 609                 if ((a = sendHLToAParserIsOk) == 1) {
 	ld a, (sendhltoaparserisok)
 	cp 1
-	jp nz, l_374
-; 578                     c++;
+	jp nz, l_384
+; 610                     c++;
 	inc c
-l_374:
+l_384:
 	pop hl
-l_359:
-; 579                 }
-; 580             }
-; 581             // --
-; 582         } while ((a = c) < 2);
+l_369:
+; 611                 }
+; 612             }
+; 613             // --
+; 614         } while ((a = c) < 2);
 	ld a, c
 	cp 2
-	jp c, l_358
+	jp c, l_368
 	pop hl
 	pop de
 	pop bc
-	ret
-; 583     }
-; 584 }
-; 585 
-; 586 /// Установить WiFI пароль
-; 587 void setSSIDPassword() {
-setssidpassword:
-; 588     push_pop(hl) {
-	push hl
-; 589         hl = WifiStateViewPassVal;
-	ld hl, wifistateviewpassval
-; 590         sendHLToA(a = 0); // Action_SET_SSID_PASSWORD = 0, // 0
-	ld a, 0
-	call sendhltoa
-	pop hl
-	ret
-; 591     }
-; 592 }
-; 593 
-; 594 /// Установить FTP HomeDir
-; 595 void setFtpHomeDir() {
-setftphomedir:
-; 596     push_pop(hl) {
-	push hl
-; 597         hl = FtpSettingsViewValueHomeDir;
-	ld hl, ftpsettingsviewvaluehomedir
-; 598         sendHLToA(a = 2); // Action_SET_FTP_HomeDir, // 2
-	ld a, 2
-	call sendhltoa
-	pop hl
-	ret
-; 599     }
-; 600 }
-; 601 
-; 602 /// Установить FTP Password
-; 603 void setFtpPassword() {
-setftppassword:
-; 604     push_pop(hl) {
-	push hl
-; 605         hl = FtpSettingsViewValuePass;
-	ld hl, ftpsettingsviewvaluepass
-; 606         sendHLToA(a = 1); // Action_SET_FTP_PASSWORD, // 1
-	ld a, 1
-	call sendhltoa
-	pop hl
-	ret
-; 607     }
-; 608 }
-; 609 
-; 610 /// Установить FTP User
-; 611 void setFtpUser() {
-setftpuser:
-; 612     push_pop(hl) {
-	push hl
-; 613         hl = FtpSettingsViewValueUser;
-	ld hl, ftpsettingsviewvalueuser
-; 614         sendHLToA(a = 3); // Action_SET_FTP_ftpUser, // 3
-	ld a, 3
-	call sendhltoa
-	pop hl
 	ret
 ; 615     }
 ; 616 }
 ; 617 
-; 618 /// Установить FTP ServerUrl
-; 619 void setFtpServerUrl() {
-setftpserverurl:
+; 618 /// Установить WiFI пароль
+; 619 void setSSIDPassword() {
+setssidpassword:
 ; 620     push_pop(hl) {
 	push hl
-; 621         hl = FtpStateViewIpValue;
-	ld hl, ftpstateviewipvalue
-; 622         sendHLToA(a = 4); // Action_SET_FTP_ServerUrl, // 4
-	ld a, 4
+; 621         hl = WifiStateViewPassVal;
+	ld hl, wifistateviewpassval
+; 622         sendHLToA(a = 0); // Action_SET_SSID_PASSWORD = 0, // 0
+	ld a, 0
 	call sendhltoa
 	pop hl
 	ret
 ; 623     }
 ; 624 }
 ; 625 
-; 626 /// Установить FTP Port
-; 627 void setFtpPort() {
-setftpport:
+; 626 /// Установить FTP HomeDir
+; 627 void setFtpHomeDir() {
+setftphomedir:
 ; 628     push_pop(hl) {
 	push hl
-; 629         hl = FtpSettingsViewValuePort;
-	ld hl, ftpsettingsviewvalueport
-; 630         sendHLToA(a = 5); // Action_SET_FTP_Port, // 5
-	ld a, 5
+; 629         hl = FtpSettingsViewValueHomeDir;
+	ld hl, ftpsettingsviewvaluehomedir
+; 630         sendHLToA(a = 2); // Action_SET_FTP_HomeDir, // 2
+	ld a, 2
 	call sendhltoa
 	pop hl
 	ret
 ; 631     }
 ; 632 }
 ; 633 
-; 634 uint16_t sendHLPoint = 0x0000;
+; 634 /// Установить FTP Password
+; 635 void setFtpPassword() {
+setftppassword:
+; 636     push_pop(hl) {
+	push hl
+; 637         hl = FtpSettingsViewValuePass;
+	ld hl, ftpsettingsviewvaluepass
+; 638         sendHLToA(a = 1); // Action_SET_FTP_PASSWORD, // 1
+	ld a, 1
+	call sendhltoa
+	pop hl
+	ret
+; 639     }
+; 640 }
+; 641 
+; 642 /// Установить FTP User
+; 643 void setFtpUser() {
+setftpuser:
+; 644     push_pop(hl) {
+	push hl
+; 645         hl = FtpSettingsViewValueUser;
+	ld hl, ftpsettingsviewvalueuser
+; 646         sendHLToA(a = 3); // Action_SET_FTP_ftpUser, // 3
+	ld a, 3
+	call sendhltoa
+	pop hl
+	ret
+; 647     }
+; 648 }
+; 649 
+; 650 /// Установить FTP ServerUrl
+; 651 void setFtpServerUrl() {
+setftpserverurl:
+; 652     push_pop(hl) {
+	push hl
+; 653         hl = FtpStateViewIpValue;
+	ld hl, ftpstateviewipvalue
+; 654         sendHLToA(a = 4); // Action_SET_FTP_ServerUrl, // 4
+	ld a, 4
+	call sendhltoa
+	pop hl
+	ret
+; 655     }
+; 656 }
+; 657 
+; 658 /// Установить FTP Port
+; 659 void setFtpPort() {
+setftpport:
+; 660     push_pop(hl) {
+	push hl
+; 661         hl = FtpSettingsViewValuePort;
+	ld hl, ftpsettingsviewvalueport
+; 662         sendHLToA(a = 5); // Action_SET_FTP_Port, // 5
+	ld a, 5
+	call sendhltoa
+	pop hl
+	ret
+; 663     }
+; 664 }
+; 665 
+; 666 /// Получить все статусы
+; 667 void getAllStatus() {
+getallstatus:
+; 668     //-- Lock
+; 669     if ((a = NetIsLock) == 1) {
+	ld a, (netislock)
+	cp 1
+	jp nz, l_386
+; 670         return;
+	ret
+l_386:
+; 671     }
+; 672     a = 1;
+	ld a, 1
+; 673     NetIsLock = a;
+	ld (netislock), a
+; 674     //--
+; 675     push_pop(hl) {
+	push hl
+; 676         a = 10;
+	ld a, 10
+; 677         NetLoopCount = a;
+	ld (netloopcount), a
+; 678         do {
+l_388:
+; 679             l = 51; //GET_ALL_STATE, // 51
+	ld l, 51
+; 680             h = 0;
+	ld h, 0
+; 681             sendCommand();
+	call sendcommand
+; 682             //
+; 683             l = 5;
+	ld l, 5
+; 684             readNewInBuffer();
+	call readnewinbuffer
+; 685             getAllStatusParser();
+	call getallstatusparser
+; 686             //-- MAX LOOP
+; 687             a = NetLoopCount;
+	ld a, (netloopcount)
+; 688             a--;
+	dec a
+; 689             NetLoopCount = a;
+	ld (netloopcount), a
+; 690             if (a == 0) {
+	or a
+	jp nz, l_391
+; 691                 a = 1;
+	ld a, 1
+; 692                 allStatusParserCheckSumState = a;
+	ld (allstatusparserchecksumstate), a
+l_391:
+l_389:
+; 693             }
+; 694             //--
+; 695         } while ((a = allStatusParserCheckSumState) == 0);
+	ld a, (allstatusparserchecksumstate)
+	or a
+	jp z, l_388
+	pop hl
+; 696     }
+; 697     //-- Lock
+; 698     a = 0;
+	ld a, 0
+; 699     NetIsLock = a;
+	ld (netislock), a
+	ret
+; 700     //--
+; 701 }
+; 702 
+; 703 /// Перейти на домашную папку
+; 704 void setFtpGoToHomeDir() {
+setftpgotohomedir:
+; 705     push_pop(hl) {
+	push hl
+; 706         l = 52; //SET_FTP_GO_HOME_DIR, // 52
+	ld l, 52
+; 707         h = 0;
+	ld h, 0
+; 708         sendCommand();
+	call sendcommand
+	pop hl
+	ret
+; 709     }
+; 710 }
+; 711 
+; 712 uint8_t NetIsLock = 0;
+netislock:
+	db 0
+; 715 uint8_t NetError = 0;
+neterror:
+	db 0
+; 716 uint8_t NetLoopCount = 0;
+netloopcount:
+	db 0
+; 718 uint16_t sendHLPoint = 0x0000;
 sendhlpoint:
 	dw 0
-; 635 uint8_t sendHLActionKey = 0;
+; 719 uint8_t sendHLActionKey = 0;
 sendhlactionkey:
 	db 0
 ; 12 void checkSumPageBuffer() {
@@ -5901,7 +6078,7 @@ checksumpagebuffer:
 	inc de
 ; 33             // buffer
 ; 34             do {
-l_376:
+l_393:
 ; 35                 a = *de;
 	ld a, (de)
 ; 36                 a += c;
@@ -5912,29 +6089,29 @@ l_376:
 	inc de
 ; 39                 b--;
 	dec b
-l_377:
+l_394:
 ; 40             } while ((a = b) > 0);
 	ld a, b
 	or a
-	jp nz, l_376
+	jp nz, l_393
 ; 41             // sum
 ; 42             a = *de;
 	ld a, (de)
 ; 43             if (a == c) {
 	cp c
-	jp nz, l_379
+	jp nz, l_396
 ; 44                 a = 1;
 	ld a, 1
 ; 45                 parsePageBufferIsCheck = a;
 	ld (parsepagebufferischeck), a
-	jp l_380
-l_379:
+	jp l_397
+l_396:
 ; 46             } else {
 ; 47                 a = 0;
 	ld a, 0
 ; 48                 parsePageBufferIsCheck = a;
 	ld (parsepagebufferischeck), a
-l_380:
+l_397:
 	pop bc
 	pop de
 	ret
@@ -5953,7 +6130,7 @@ parsepagebuffer:
 ; 59     if ((a = parsePageBufferIsCheck) == 1) {
 	ld a, (parsepagebufferischeck)
 	cp 1
-	jp nz, l_381
+	jp nz, l_398
 ; 60         push_pop(de) {
 	push de
 ; 61             push_pop(bc) {
@@ -5981,7 +6158,7 @@ parsepagebuffer:
 ; 74                 push_pop(de) {
 	push de
 ; 75                     do {
-l_383:
+l_400:
 ; 76                         a = *de;
 	ld a, (de)
 ; 77                         *hl = a;
@@ -5992,16 +6169,16 @@ l_383:
 	inc hl
 ; 80                         b--;
 	dec b
-l_384:
+l_401:
 ; 81                     } while ((a = b) > 0);
 	ld a, b
 	or a
-	jp nz, l_383
+	jp nz, l_400
 	pop de
 	pop bc
 	pop de
-	jp l_382
-l_381:
+	jp l_399
+l_398:
 ; 82                 }
 ; 83             }
 ; 84         }
@@ -6010,7 +6187,7 @@ l_381:
 	ld a, 90
 ; 87         parsePageBufferNext = a;
 	ld (parsepagebuffernext), a
-l_382:
+l_399:
 	ret
 ; 88     }
 ; 89 }
@@ -6025,7 +6202,7 @@ parsepagenewbuffer:
 ; 96     if ((a = parsePageBufferIsCheck) == 1) {
 	ld a, (parsepagebufferischeck)
 	cp 1
-	jp nz, l_386
+	jp nz, l_403
 ; 97         push_pop(de) {
 	push de
 ; 98             push_pop(bc) {
@@ -6054,12 +6231,12 @@ parsepagenewbuffer:
 	call parsepagenewbufferor01or5a
 ; 112                 if (a == 1) {
 	cp 1
-	jp nz, l_388
+	jp nz, l_405
 ; 113                     // buffer
 ; 114                     push_pop(de) {
 	push de
 ; 115                         do {
-l_390:
+l_407:
 ; 116                             a = *de;
 	ld a, (de)
 ; 117                             *hl = a;
@@ -6070,14 +6247,14 @@ l_390:
 	inc hl
 ; 120                             b--;
 	dec b
-l_391:
+l_408:
 ; 121                         } while ((a = b) > 0);
 	ld a, b
 	or a
-	jp nz, l_390
+	jp nz, l_407
 	pop de
-	jp l_389
-l_388:
+	jp l_406
+l_405:
 ; 122                     }
 ; 123                 } else {
 ; 124                     a = 0;
@@ -6086,10 +6263,10 @@ l_388:
 	ld (parsepagebuffernext), a
 ; 126                     parsePageBufferIsCheck = a;
 	ld (parsepagebufferischeck), a
-l_389:
+l_406:
 	pop bc
 	pop de
-l_386:
+l_403:
 	ret
 ; 127                 }
 ; 128             }
@@ -6104,24 +6281,24 @@ parsepagenewbufferor01or5a:
 ; 135         if ((a = parsePageBufferNext) == 0x01) {
 	ld a, (parsepagebuffernext)
 	cp 1
-	jp nz, l_393
+	jp nz, l_410
 ; 136             b = 1;
 	ld b, 1
-	jp l_394
-l_393:
+	jp l_411
+l_410:
 ; 137         } else if ((a = parsePageBufferNext) == 0x5A) {
 	ld a, (parsepagebuffernext)
 	cp 90
-	jp nz, l_395
+	jp nz, l_412
 ; 138             b = 1;
 	ld b, 1
-	jp l_396
-l_395:
+	jp l_413
+l_412:
 ; 139         } else {
 ; 140             b = 0;
 	ld b, 0
-l_396:
-l_394:
+l_413:
+l_411:
 ; 141         }
 ; 142         a = b;
 	ld a, b
@@ -6143,7 +6320,7 @@ parseftplistbuffer:
 ; 154     if ((a = parseFtpListBufferIsCheck) == 1) {
 	ld a, (parseftplistbufferischeck)
 	cp 1
-	jp nz, l_397
+	jp nz, l_414
 ; 155         push_pop(de, hl, bc) {
 	push de
 	push hl
@@ -6167,10 +6344,10 @@ parseftplistbuffer:
 	rla
 	rla
 ; 164             if (flag_c) { // Если переполняние младшего разряда, инкремент старшего
-	jp nc, l_399
+	jp nc, l_416
 ; 165                 b++;
 	inc b
-l_399:
+l_416:
 ; 166             }
 ; 167             c = a;
 	ld c, a
@@ -6183,19 +6360,19 @@ l_399:
 	and 64
 ; 172             if (a == 0x40) {
 	cp 64
-	jp nz, l_401
+	jp nz, l_418
 ; 173                 a = 0x01;
 	ld a, 1
 ; 174                 parseFtpListBufferNext = a;
 	ld (parseftplistbuffernext), a
-	jp l_402
-l_401:
+	jp l_419
+l_418:
 ; 175             } else {
 ; 176                 a = 0x5A;
 	ld a, 90
 ; 177                 parseFtpListBufferNext = a;
 	ld (parseftplistbuffernext), a
-l_402:
+l_419:
 ; 178             }
 ; 179             //Pos -> isDir
 ; 180             a = *de;
@@ -6204,15 +6381,15 @@ l_402:
 	and 128
 ; 182             if (a == 0x80) {
 	cp 128
-	jp nz, l_403
+	jp nz, l_420
 ; 183                 a = 1;
 	ld a, 1
-	jp l_404
-l_403:
+	jp l_421
+l_420:
 ; 184             } else {
 ; 185                 a = 0;
 	ld a, 0
-l_404:
+l_421:
 ; 186             }
 ; 187             push_pop(hl, de) {
 	push hl
@@ -6300,7 +6477,7 @@ l_404:
 ; 231             b = 8;
 	ld b, 8
 ; 232             do {
-l_405:
+l_422:
 ; 233                 a = *de;
 	ld a, (de)
 ; 234                 *hl = a;
@@ -6311,23 +6488,23 @@ l_405:
 	inc hl
 ; 237                 b--;
 	dec b
-l_406:
+l_423:
 ; 238             } while ((a = b) > 0);
 	ld a, b
 	or a
-	jp nz, l_405
+	jp nz, l_422
 	pop bc
 	pop hl
 	pop de
-	jp l_398
-l_397:
+	jp l_415
+l_414:
 ; 239         }
 ; 240     } else {
 ; 241         a = 0xFF; // ERROR
 	ld a, 255
 ; 242         parseFtpListBufferNext = a;
 	ld (parseftplistbuffernext), a
-l_398:
+l_415:
 	ret
 ; 243     }
 ; 244 }
@@ -6344,7 +6521,7 @@ checksumftplistbuffer:
 ; 250         b = 14;
 	ld b, 14
 ; 251         do {
-l_408:
+l_425:
 ; 252             a = *de;
 	ld a, (de)
 ; 253             a += c;
@@ -6355,29 +6532,29 @@ l_408:
 	inc de
 ; 256             b--;
 	dec b
-l_409:
+l_426:
 ; 257         } while ((a = b) > 0);
 	ld a, b
 	or a
-	jp nz, l_408
+	jp nz, l_425
 ; 258         // SUM
 ; 259         a = *de;
 	ld a, (de)
 ; 260         if (a == c) {
 	cp c
-	jp nz, l_411
+	jp nz, l_428
 ; 261             a = 1;
 	ld a, 1
 ; 262             parseFtpListBufferIsCheck = a;
 	ld (parseftplistbufferischeck), a
-	jp l_412
-l_411:
+	jp l_429
+l_428:
 ; 263         } else {
 ; 264             a = 0;
 	ld a, 0
 ; 265             parseFtpListBufferIsCheck = a;
 	ld (parseftplistbufferischeck), a
-l_412:
+l_429:
 	pop bc
 	pop de
 	ret
@@ -6393,7 +6570,7 @@ ftpfiledownloadparse:
 ; 273     if ((a = parseFtpFileLoadViewCheckSumState) == 1) {
 	ld a, (parseftpfileloadviewchecksumstat)
 	cp 1
-	jp nz, l_413
+	jp nz, l_430
 ; 274         push_pop(de) {
 	push de
 ; 275             push_pop(hl) {
@@ -6436,7 +6613,7 @@ ftpfiledownloadparse:
 ; 296                     if ((a = parseFtpFileLoadViewIsNextData) == 0x01) {
 	ld a, (parseftpfileloadviewisnextdata)
 	cp 1
-	jp nz, l_415
+	jp nz, l_432
 ; 297                         ftpFileDownloadCalkDiskPosToHL();
 	call ftpfiledownloadcalkdiskpostohl
 ; 298                         a = ftpFileDownloadDataSize;
@@ -6444,7 +6621,7 @@ ftpfiledownloadparse:
 ; 299                         b = a;
 	ld b, a
 ; 300                         do {
-l_417:
+l_434:
 ; 301                             a = *de;
 	ld a, (de)
 ; 302                             ordos_wdisk();
@@ -6455,30 +6632,30 @@ l_417:
 	inc hl
 ; 305                             b--;
 	dec b
-l_418:
+l_435:
 ; 306                         } while ((a = b) > 0);
 	ld a, b
 	or a
-	jp nz, l_417
+	jp nz, l_434
 ; 307                         ftpFileDownloadEnd = hl;
 	ld (ftpfiledownloadend), hl
-l_415:
+l_432:
 ; 308                     }
 ; 309                     // Если контрольная сумма совпала и статус что данные закончились - закрываем файл
 ; 310                     if ((a = parseFtpFileLoadViewIsNextData) == 0x5A) {
 	ld a, (parseftpfileloadviewisnextdata)
 	cp 90
-	jp nz, l_420
+	jp nz, l_437
 ; 311                         hl = ftpFileDownloadEnd;
 	ld hl, (ftpfiledownloadend)
 ; 312                         ordos_stop();
 	call ordos_stop
-l_420:
+l_437:
 	pop bc
 	pop hl
 	pop de
-	jp l_414
-l_413:
+	jp l_431
+l_430:
 ; 313                     }
 ; 314                 }
 ; 315             }
@@ -6488,7 +6665,7 @@ l_413:
 	ld a, 255
 ; 319         parseFtpFileLoadViewIsNextData = a;
 	ld (parseftpfileloadviewisnextdata), a
-l_414:
+l_431:
 	ret
 ; 320     }
 ; 321 }
@@ -6520,7 +6697,7 @@ checksumftpfiledownload:
 ; 336             c = 0;
 	ld c, 0
 ; 337             do {
-l_422:
+l_439:
 ; 338                 a = *de;
 	ld a, (de)
 ; 339                 a += c;
@@ -6531,29 +6708,29 @@ l_422:
 	inc de
 ; 342                 b--;
 	dec b
-l_423:
+l_440:
 ; 343             } while ((a = b) > 0);
 	ld a, b
 	or a
-	jp nz, l_422
+	jp nz, l_439
 ; 344             //
 ; 345             a = *de;
 	ld a, (de)
 ; 346             if (a == c) {
 	cp c
-	jp nz, l_425
+	jp nz, l_442
 ; 347                 a = 1;
 	ld a, 1
 ; 348                 parseFtpFileLoadViewCheckSumState = a;
 	ld (parseftpfileloadviewchecksumstat), a
-	jp l_426
-l_425:
+	jp l_443
+l_442:
 ; 349             } else {
 ; 350                 a = 0;
 	ld a, 0
 ; 351                 parseFtpFileLoadViewCheckSumState = a;
 	ld (parseftpfileloadviewchecksumstat), a
-l_426:
+l_443:
 	pop bc
 	pop de
 	ret
@@ -6608,10 +6785,10 @@ ftpfiledownloadcalkdiskpostohl:
 ; 381         a -= e;
 	sub e
 ; 382         if (flag_c) {
-	jp nc, l_427
+	jp nc, l_444
 ; 383             h--;
 	dec h
-l_427:
+l_444:
 ; 384         }
 ; 385         l = a;
 	ld l, a
@@ -6627,10 +6804,10 @@ l_427:
 ; 391         a += e;
 	add e
 ; 392         if (flag_c) {
-	jp nc, l_429
+	jp nc, l_446
 ; 393             h++;
 	inc h
-l_429:
+l_446:
 ; 394         }
 ; 395         l = a;
 	ld l, a
@@ -6670,23 +6847,23 @@ ftpfiledownloadparseprogressandn:
 ; 416         if ((a = b) == 0x80) {
 	ld a, b
 	cp 128
-	jp nz, l_431
+	jp nz, l_448
 ; 417             a = 0x01;
 	ld a, 1
 ; 418             parseFtpFileLoadViewIsNextData = a;
 	ld (parseftpfileloadviewisnextdata), a
-	jp l_432
-l_431:
+	jp l_449
+l_448:
 ; 419         } else if ((a = b) == 0x40) {
 	ld a, b
 	cp 64
-	jp nz, l_433
+	jp nz, l_450
 ; 420             a = 0x5A;
 	ld a, 90
 ; 421             parseFtpFileLoadViewIsNextData = a;
 	ld (parseftpfileloadviewisnextdata), a
-	jp l_434
-l_433:
+	jp l_451
+l_450:
 ; 422         } else {
 ; 423             a = 0xFF;
 	ld a, 255
@@ -6696,8 +6873,8 @@ l_433:
 	ld a, 0
 ; 426             parseFtpFileLoadViewCheckSumState = a;
 	ld (parseftpfileloadviewchecksumstat), a
-l_434:
-l_432:
+l_451:
+l_449:
 	pop bc
 	ret
 ; 427         }
@@ -6711,7 +6888,7 @@ ssidlistnextparser:
 ; 433     if ((a = SsidListNextParserCheckSumState) == 1) {
 	ld a, (ssidlistnextparserchecksumstate)
 	cp 1
-	jp nz, l_435
+	jp nz, l_452
 ; 434         push_pop(de, bc) {
 	push de
 	push bc
@@ -6722,7 +6899,7 @@ ssidlistnextparser:
 	ld a, (de)
 ; 438             if (a == 0x01) {
 	cp 1
-	jp nz, l_437
+	jp nz, l_454
 ; 439                 de++;
 	inc de
 ; 440                 //-- POS
@@ -6766,18 +6943,18 @@ ssidlistnextparser:
 	ld (ssidlistnextparserpoint), hl
 	pop hl
 	pop de
-	jp l_438
-l_437:
+	jp l_455
+l_454:
 ; 459                 }
 ; 460             } else { // Что то не так, еще раз качаем
 ; 461                 a = 0;
 	ld a, 0
 ; 462                 SsidListNextParserCheckSumState = a;
 	ld (ssidlistnextparserchecksumstate), a
-l_438:
+l_455:
 	pop bc
 	pop de
-l_435:
+l_452:
 	ret
 ; 463             }
 ; 464         }
@@ -6796,7 +6973,7 @@ ssidlistnextparserchecksum:
 ; 472         c = 0;
 	ld c, 0
 ; 473         do {
-l_439:
+l_456:
 ; 474             a = *de;
 	ld a, (de)
 ; 475             a += c;
@@ -6807,28 +6984,28 @@ l_439:
 	inc de
 ; 478             b--;
 	dec b
-l_440:
+l_457:
 ; 479         } while ((a = b) > 0);
 	ld a, b
 	or a
-	jp nz, l_439
+	jp nz, l_456
 ; 480         a = *de;
 	ld a, (de)
 ; 481         if (a == c) {
 	cp c
-	jp nz, l_442
+	jp nz, l_459
 ; 482             a = 1;
 	ld a, 1
 ; 483             SsidListNextParserCheckSumState = a;
 	ld (ssidlistnextparserchecksumstate), a
-	jp l_443
-l_442:
+	jp l_460
+l_459:
 ; 484         } else {
 ; 485             a = 0;
 	ld a, 0
 ; 486             SsidListNextParserCheckSumState = a;
 	ld (ssidlistnextparserchecksumstate), a
-l_443:
+l_460:
 	pop bc
 	pop de
 	ret
@@ -6847,7 +7024,7 @@ sendhltoaparser:
 ; 497     if ((a = sendHLToAParserCheckSumState) == 1) {
 	ld a, (sendhltoaparserchecksumstate)
 	cp 1
-	jp nz, l_444
+	jp nz, l_461
 ; 498         push_pop(de) {
 	push de
 ; 499             de = ESP_I2S_BUFFER;
@@ -6857,29 +7034,29 @@ sendhltoaparser:
 	ld a, (de)
 ; 502             if (a == 0x01) {
 	cp 1
-	jp nz, l_446
+	jp nz, l_463
 ; 503                 a = 0;
 	ld a, 0
 ; 504                 sendHLToAParserIsOk = a;
 	ld (sendhltoaparserisok), a
-	jp l_447
-l_446:
+	jp l_464
+l_463:
 ; 505             } else if (a == 0xA5) {
 	cp 165
-	jp nz, l_448
+	jp nz, l_465
 ; 506                 a = 1;
 	ld a, 1
 ; 507                 sendHLToAParserIsOk = a;
 	ld (sendhltoaparserisok), a
-	jp l_449
-l_448:
+	jp l_466
+l_465:
 ; 508             } else {
 ; 509                 a = 0;
 	ld a, 0
 ; 510                 sendHLToAParserIsOk = a;
 	ld (sendhltoaparserisok), a
-l_449:
-l_447:
+l_466:
+l_464:
 ; 511             }
 ; 512             de++;
 	inc de
@@ -6888,15 +7065,15 @@ l_447:
 	ld a, (de)
 ; 515             if (a != 0x55) {
 	cp 85
-	jp z, l_450
+	jp z, l_467
 ; 516                 a = 0;
 	ld a, 0
 ; 517                 sendHLToAParserIsOk = a;
 	ld (sendhltoaparserisok), a
-l_450:
+l_467:
 	pop de
-	jp l_445
-l_444:
+	jp l_462
+l_461:
 ; 518             }
 ; 519         }
 ; 520     } else {
@@ -6904,7 +7081,7 @@ l_444:
 	ld a, 0
 ; 522         sendHLToAParserIsOk = a;
 	ld (sendhltoaparserisok), a
-l_445:
+l_462:
 	ret
 ; 523     }
 ; 524 }
@@ -6922,7 +7099,7 @@ sendhltoaparserchecksum:
 ; 531         c = 0;
 	ld c, 0
 ; 532         do {
-l_452:
+l_469:
 ; 533             a = *de;
 	ld a, (de)
 ; 534             a += c;
@@ -6933,28 +7110,28 @@ l_452:
 	inc de
 ; 537             b--;
 	dec b
-l_453:
+l_470:
 ; 538         } while ((a = b) > 0);
 	ld a, b
 	or a
-	jp nz, l_452
+	jp nz, l_469
 ; 539         a = *de;
 	ld a, (de)
 ; 540         if (a == c) {
 	cp c
-	jp nz, l_455
+	jp nz, l_472
 ; 541             a = 1;
 	ld a, 1
 ; 542             sendHLToAParserCheckSumState = a;
 	ld (sendhltoaparserchecksumstate), a
-	jp l_456
-l_455:
+	jp l_473
+l_472:
 ; 543         } else {
 ; 544             a = 0;
 	ld a, 0
 ; 545             sendHLToAParserCheckSumState = a;
 	ld (sendhltoaparserchecksumstate), a
-l_456:
+l_473:
 	pop bc
 	pop de
 	ret
@@ -6962,52 +7139,176 @@ l_456:
 ; 547     }
 ; 548 }
 ; 549 
-; 550 uint8_t sendHLToAParserIsOk = 0;
+; 550 /// Get All State
+; 551 /// 1 byte : Test = 0x55
+; 552 /// 2 byre : All State : WIFIConnect = 0x01; FtpConnect = 0x02;
+; 553 /// 3 byte : Reserved
+; 554 /// 4 byte : SUM
+; 555 void getAllStatusParser() {
+getallstatusparser:
+; 556     getAllStatusParserCheckSum();
+	call getallstatusparserchecksum
+; 557     if ((a = allStatusParserCheckSumState) == 1) {
+	ld a, (allstatusparserchecksumstate)
+	cp 1
+	jp nz, l_474
+; 558         push_pop(de, bc) {
+	push de
+	push bc
+; 559             de = ESP_I2S_BUFFER;
+	ld de, esp_i2s_buffer
+; 560             // Test byte
+; 561             a = *de;
+	ld a, (de)
+; 562             if (a == 0x55) {
+	cp 85
+	jp nz, l_476
+; 563                 de++;
+	inc de
+; 564                 // -- All State
+; 565                 a = *de;
+	ld a, (de)
+; 566                 b = a;
+	ld b, a
+; 567                 // -- WIFIConnect
+; 568                 a = b;
+	ld a, b
+; 569                 a &= 0x01;
+	and 1
+; 570                 ThreadsNetSetWiFiStateA();
+	call threadsnetsetwifistatea
+; 571                 // -- FtpConnect
+; 572                 a = b;
+	ld a, b
+; 573                 a &= 0x02;
+	and 2
+; 574                 cyclic_rotate_right(a, 1);
+	rrca
+; 575                 ThreadsNetSetFtpStateA();
+	call threadsnetsetftpstatea
+; 576                 // -- End state
+; 577                 de++;
+	inc de
+	jp l_477
+l_476:
+; 578                 // -- Reserve
+; 579             } else {
+; 580                 a = 0;
+	ld a, 0
+; 581                 allStatusParserCheckSumState = a;
+	ld (allstatusparserchecksumstate), a
+l_477:
+	pop bc
+	pop de
+l_474:
+	ret
+; 582             }
+; 583         }
+; 584     }
+; 585 }
+; 586 
+; 587 void getAllStatusParserCheckSum() {
+getallstatusparserchecksum:
+; 588     push_pop(de, bc) {
+	push de
+	push bc
+; 589         de = ESP_I2S_BUFFER;
+	ld de, esp_i2s_buffer
+; 590         //--
+; 591         b = 3;
+	ld b, 3
+; 592         c = 0;
+	ld c, 0
+; 593         do {
+l_478:
+; 594             a = *de;
+	ld a, (de)
+; 595             a += c;
+	add c
+; 596             c = a;
+	ld c, a
+; 597             de++;
+	inc de
+; 598             b--;
+	dec b
+l_479:
+; 599         } while ((a = b) > 0);
+	ld a, b
+	or a
+	jp nz, l_478
+; 600         a = *de;
+	ld a, (de)
+; 601         if (a == c) {
+	cp c
+	jp nz, l_481
+; 602             a = 1;
+	ld a, 1
+; 603             allStatusParserCheckSumState = a;
+	ld (allstatusparserchecksumstate), a
+	jp l_482
+l_481:
+; 604         } else {
+; 605             a = 0;
+	ld a, 0
+; 606             allStatusParserCheckSumState = a;
+	ld (allstatusparserchecksumstate), a
+l_482:
+	pop bc
+	pop de
+	ret
+; 607         }
+; 608     }
+; 609 }
+; 610 
+; 611 uint8_t allStatusParserCheckSumState = 0;
+allstatusparserchecksumstate:
+	db 0
+; 613 uint8_t sendHLToAParserIsOk = 0;
 sendhltoaparserisok:
 	db 0
-; 551 uint8_t sendHLToAParserCheckSumState = 0;
+; 614 uint8_t sendHLToAParserCheckSumState = 0;
 sendhltoaparserchecksumstate:
 	db 0
-; 553 uint8_t SsidListNextParserNext = 0;
+; 616 uint8_t SsidListNextParserNext = 0;
 ssidlistnextparsernext:
 	db 0
-; 554 uint8_t SsidListNextParserCheckSumState = 0;
+; 617 uint8_t SsidListNextParserCheckSumState = 0;
 ssidlistnextparserchecksumstate:
 	db 0
-; 555 uint8_t SsidListNextParserPos = 0;
+; 618 uint8_t SsidListNextParserPos = 0;
 ssidlistnextparserpos:
 	db 0
-; 556 uint16_t SsidListNextParserPoint = 0;
+; 619 uint16_t SsidListNextParserPoint = 0;
 ssidlistnextparserpoint:
 	dw 0
-; 558 uint8_t ftpFileDownloadPropertySize = 0;
+; 621 uint8_t ftpFileDownloadPropertySize = 0;
 ftpfiledownloadpropertysize:
 	db 0
-; 559 uint16_t ftpFileDownloadEnd = 0;
+; 622 uint16_t ftpFileDownloadEnd = 0;
 ftpfiledownloadend:
 	dw 0
-; 560 uint8_t ftpFileDownloadDataSize = 0;
+; 623 uint8_t ftpFileDownloadDataSize = 0;
 ftpfiledownloaddatasize:
 	db 0
-; 561 uint16_t ftpFileLoadCurrentPos = 0;
+; 624 uint16_t ftpFileLoadCurrentPos = 0;
 ftpfileloadcurrentpos:
 	dw 0
-; 562 uint8_t parseFtpFileLoadViewCheckSumState = 0;
+; 625 uint8_t parseFtpFileLoadViewCheckSumState = 0;
 parseftpfileloadviewchecksumstat:
 	db 0
-; 563 uint8_t parseFtpFileLoadViewIsNextData = 0;
+; 626 uint8_t parseFtpFileLoadViewIsNextData = 0;
 parseftpfileloadviewisnextdata:
 	db 0
-; 565 uint8_t parsePageBufferNext = 0;
+; 628 uint8_t parsePageBufferNext = 0;
 parsepagebuffernext:
 	db 0
-; 566 uint8_t parsePageBufferIsCheck = 0;
+; 629 uint8_t parsePageBufferIsCheck = 0;
 parsepagebufferischeck:
 	db 0
-; 568 uint8_t parseFtpListBufferIsCheck = 0;
+; 631 uint8_t parseFtpListBufferIsCheck = 0;
 parseftplistbufferischeck:
 	db 0
-; 569 uint8_t parseFtpListBufferNext = 0;
+; 632 uint8_t parseFtpListBufferNext = 0;
 parseftplistbuffernext:
 	db 0
 ; 11 void LoadViewShowHL() {
@@ -7076,7 +7377,7 @@ loadviewshowtitlehl:
 ; 42             b = 0;
 	ld b, 0
 ; 43             do {
-l_457:
+l_483:
 ; 44                 a = *hl;
 	ld a, (hl)
 ; 45                 c = a;
@@ -7088,18 +7389,18 @@ l_457:
 ; 48                 if ((a = LoadViewDX) < b) {
 	ld a, (loadviewdx)
 	cp b
-	jp nc, l_460
+	jp nc, l_486
 ; 49                     a = 0;
 	ld a, 0
 ; 50                     c = a;
 	ld c, a
-l_460:
-l_458:
+l_486:
+l_484:
 ; 51                 }
 ; 52             } while ((a = c) > 0);
 	ld a, c
 	or a
-	jp nz, l_457
+	jp nz, l_483
 	pop hl
 ; 53         }
 ; 54         a = LoadViewDX;
@@ -7134,77 +7435,89 @@ l_458:
 ; 69     }
 ; 70 }
 ; 71 
-; 72 void LoadViewShowProgressA() {
+; 72 uint8_t LoadViewShowProgressOld = 0xFF;
+loadviewshowprogressold:
+	db 255
+; 73 void LoadViewShowProgressA() {
 loadviewshowprogressa:
-; 73     push_pop(bc) {
+; 74     push_pop(bc) {
 	push bc
-; 74         c = a; //Save
+; 75         c = a; //Save
 	ld c, a
-; 75         //
-; 76         // X
-; 77         a = LoadViewX;
+; 76         if ((a = LoadViewShowProgressOld) != c) {
+	ld a, (loadviewshowprogressold)
+	cp c
+	jp z, l_488
+; 77             a = c;
+	ld a, c
+; 78             LoadViewShowProgressOld = a;
+	ld (loadviewshowprogressold), a
+; 79             // X
+; 80             a = LoadViewX;
 	ld a, (loadviewx)
-; 78         a += 1;
+; 81             a += 1;
 	add 1
-; 79         myCharPosX = a;
+; 82             myCharPosX = a;
 	ld (mycharposx), a
-; 80         // Y
-; 81         a = LoadViewY;
+; 83             // Y
+; 84             a = LoadViewY;
 	ld a, (loadviewy)
-; 82         a += 2;
+; 85             a += 2;
 	add 2
-; 83         myCharPosY = a;
+; 86             myCharPosY = a;
 	ld (mycharposy), a
-; 84         b = 0;
+; 87             b = 0;
 	ld b, 0
-; 85         do {
-l_462:
-; 86             if ((a = b) < c) {
+; 88             do {
+l_490:
+; 89                 if ((a = b) < c) {
 	ld a, b
 	cp c
-	jp nc, l_465
-; 87                 printMyChatA(a = 0xDB);
+	jp nc, l_493
+; 90                     printMyChatA(a = 0xDB);
 	ld a, 219
 	call printmychata
-	jp l_466
-l_465:
-; 88             } else {
-; 89                 printMyChatA(a = 0xB0); //0xB0 0xB1 0xB2
+	jp l_494
+l_493:
+; 91                 } else {
+; 92                     printMyChatA(a = 0xB0); //0xB0 0xB1 0xB2
 	ld a, 176
 	call printmychata
-l_466:
-; 90             }
-; 91             b++;
+l_494:
+; 93                 }
+; 94                 b++;
 	inc b
-l_463:
-; 92         } while ((a = b) < 40);
+l_491:
+; 95             } while ((a = b) < 40);
 	ld a, b
 	cp 40
-	jp c, l_462
+	jp c, l_490
+l_488:
 	pop bc
 	ret
-; 93     }
-; 94 }
-; 95 
-; 96 uint8_t LoadViewX = 3;
+; 96         }
+; 97     }
+; 98 }
+; 99 
+; 100 uint8_t LoadViewX = 3;
 loadviewx:
 	db 3
-; 97 uint8_t LoadViewY = 14;
+; 101 uint8_t LoadViewY = 14;
 loadviewy:
 	db 14
-; 98 uint8_t LoadViewDX = 42;
+; 102 uint8_t LoadViewDX = 42;
 loadviewdx:
 	db 42
-; 99 uint8_t LoadViewDY = 4;
+; 103 uint8_t LoadViewDY = 4;
 loadviewdy:
 	db 4
-; 100 uint8_t LoadViewColor = 0x70; // 0x1F;
+; 104 uint8_t LoadViewColor = 0x70; // 0x1F;
 loadviewcolor:
 	db 112
-; 102 uint8_t LoadViewProgress = 0;
+; 106 uint8_t LoadViewProgress = 0;
 loadviewprogress:
 	db 0
-; 104 uint8_t LoadViewLoadTitle[] = "Load...";
+; 108 uint8_t LoadViewLoadTitle[] = "Load...";
 loadviewloadtitle:
 	db 76
 	db 111
@@ -7231,7 +7544,7 @@ threadstick:
 ; 20     if ((a = ThreadsTickCount) >= 100) {
 	ld a, (threadstickcount)
 	cp 100
-	jp c, l_467
+	jp c, l_495
 ; 21         a = 0;
 	ld a, 0
 ; 22         ThreadsTickCount = a;
@@ -7239,12 +7552,12 @@ threadstick:
 ; 23         //--
 ; 24         ThreadsNetUpdateState();
 	call threadsnetupdatestate
-	jp l_468
-l_467:
+	jp l_496
+l_495:
 ; 25     } else {
 ; 26         ThreadsTickCountNext();
 	call threadstickcountnext
-l_468:
+l_496:
 	ret
 ; 27     }
 ; 28     #endif
@@ -7252,249 +7565,346 @@ l_468:
 ; 30 
 ; 31 void ThreadsNetUpdateState() {
 threadsnetupdatestate:
-; 32     getFtpState();
-	call getftpstate
-; 33     getWifiState();
-	call getwifistate
-; 34     ThreadsNetNeedStateChange();
-; 35 }
-; 36 
-; 37 void ThreadsNetNeedStateChange() {
+; 32     getAllStatus();
+	call getallstatus
+; 33     //getFtpState();
+; 34     //getWifiState();
+; 35     ThreadsNetNeedStateChange();
+; 36 }
+; 37 
+; 38 void ThreadsNetNeedStateChange() {
 threadsnetneedstatechange:
-; 38     if ((a = WiFiNetStateChange) == 1) {
+; 39     if ((a = WiFiNetStateChange) == 1) {
 	ld a, (wifinetstatechange)
 	cp 1
-	jp nz, l_469
-; 39         ThreadsNetNeedUpdateWiFiData();
+	jp nz, l_497
+; 40         ThreadsNetNeedUpdateWiFiData();
 	call threadsnetneedupdatewifidata
-; 40         a = 0;
+; 41         a = 0;
 	ld a, 0
-; 41         WiFiNetStateChange = a;
+; 42         WiFiNetStateChange = a;
 	ld (wifinetstatechange), a
-l_469:
-; 42     }
-; 43     if ((a = FtpNetStateChange) == 1) {
+l_497:
+; 43     }
+; 44     if ((a = FtpNetStateChange) == 1) {
 	ld a, (ftpnetstatechange)
 	cp 1
-	jp nz, l_471
-; 44         ThreadsNetNeedUpdateFtpData();
+	jp nz, l_499
+; 45         ThreadsNetNeedUpdateFtpData();
 	call threadsnetneedupdateftpdata
-; 45         a = 0;
+; 46         a = 0;
 	ld a, 0
-; 46         FtpNetStateChange = a;
+; 47         FtpNetStateChange = a;
 	ld (ftpnetstatechange), a
-l_471:
+l_499:
 	ret
-; 47     }
-; 48 }
-; 49 
-; 50 // ----------------------------------
-; 51 // ------------ WiFi ----------------
-; 52 // ----------------------------------
-; 53 void ThreadsNetNeedUpdateWiFiData() {
+; 48     }
+; 49 }
+; 50 
+; 51 // ----------------------------------
+; 52 // ------------ WiFi ----------------
+; 53 // ----------------------------------
+; 54 void ThreadsNetNeedUpdateWiFiData() {
 threadsnetneedupdatewifidata:
-; 54     getSSIDIPAddress();
+; 55     getSSIDIPAddress();
 	call getssidipaddress
-; 55     WifiStateViewShowValue();
+; 56     WifiStateViewShowValue();
 	jp wifistateviewshowvalue
-; 56 }
-; 57 
-; 58 void ThreadsNetNeedUpdateWiFiValue() {
+; 57 }
+; 58 
+; 59 void ThreadsNetNeedUpdateWiFiValue() {
 threadsnetneedupdatewifivalue:
-; 59     getSSIDValue();
+; 60     getSSIDValue();
 	call getssidvalue
-; 60     getSSIDIPAddress();
+; 61     getSSIDIPAddress();
 	call getssidipaddress
-; 61     getSSIDMacAddress();
+; 62     getSSIDMacAddress();
 	call getssidmacaddress
-; 62     getSSIDPassword();
+; 63     getSSIDPassword();
 	call getssidpassword
-; 63     // UI
-; 64     WifiStateViewShowValue();
+; 64     // UI
+; 65     WifiStateViewShowValue();
 	jp wifistateviewshowvalue
-; 65 }
-; 66 
-; 67 void ThreadsNetPasswordUpdate() {
+; 66 }
+; 67 
+; 68 void ThreadsNetPasswordUpdate() {
 threadsnetpasswordupdate:
-; 68     setSSIDPassword();
+; 69     setSSIDPassword();
 	call setssidpassword
-; 69     getSSIDPassword();
+; 70     getSSIDPassword();
 	jp getssidpassword
-; 70 }
-; 71 
-; 72 void ThreadsNetSsidUpdateA() {
+; 71 }
+; 72 
+; 73 void ThreadsNetSsidUpdateA() {
 threadsnetssidupdatea:
-; 73     setSSIDNumberA();
+; 74     setSSIDNumberA();
 	call setssidnumbera
-; 74     getSSIDValue();
+; 75     getSSIDValue();
 	jp getssidvalue
-; 75 }
-; 76 
-; 77 // ----------------------------------
-; 78 // ------------ Ftp  ----------------
-; 79 // ----------------------------------
-; 80 void ThreadsNetNeedUpdateFtpData() {
-threadsnetneedupdateftpdata:
-; 81     FtpStateViewShowValue();
-	call ftpstateviewshowvalue
-; 82     //
-; 83     CurrentViewDiskOrFtpViewByIdA(a = CurrentViewId);
-	ld a, (currentviewid)
-	call currentviewdiskorftpviewbyida
-; 84     if (a == 1) {
-	cp 1
-	jp nz, l_473
-; 85         if ((a = FtpStateViewStatus) == 1) {
-	ld a, (ftpstateviewstatus)
-	cp 1
-	jp nz, l_475
-; 86             updateFtpList();
-	call updateftplist
-; 87             getNetFtpListNew();
-	call getnetftplistnew
-	jp l_476
-l_475:
-; 88         } else {
-; 89             FtpViewEmptyList();
-	call ftpviewemptylist
-l_476:
-; 90         }
-; 91         FtpViewListUpdateUI();
-	call ftpviewlistupdateui
-l_473:
+; 76 }
+; 77 
+; 78 void ThreadsNetSetWiFiStateA() {
+threadsnetsetwifistatea:
+; 79     push_pop(bc) {
+	push bc
+; 80         a &= 0x01;
+	and 1
+; 81         b = a;
+	ld b, a
+; 82         // Old Value
+; 83         a = WifiStateViewSSIDIsConnected;
+	ld a, (wifistateviewssidisconnected)
+; 84         c = a;
+	ld c, a
+; 85         // --
+; 86         a = b;
+	ld a, b
+; 87         WifiStateViewSSIDIsConnected = a;
+	ld (wifistateviewssidisconnected), a
+; 88         if(a != c){
+	cp c
+	jp z, l_501
+; 89             a = 0x01;
+	ld a, 1
+; 90             WiFiNetStateChange = a;
+	ld (wifinetstatechange), a
+l_501:
+	pop bc
 	ret
+; 91         }
 ; 92     }
 ; 93 }
 ; 94 
-; 95 void ThreadsNetNeedUpdateFtpValue() {
-threadsnetneedupdateftpvalue:
-; 96     getFTPUrl();
-	call getftpurl
-; 97     getFTPHomeDir();
-	call getftphomedir
-; 98     getFTPPort();
-	call getftpport
-; 99     getFTPUser();
-	call getftpuser
-; 100     getFTPPassword();
-	call getftppassword
-; 101     // UI
-; 102     FtpStateViewShowValue();
-	jp ftpstateviewshowvalue
-; 103 }
-; 104 
-; 105 void ThreadsNetFtpHomeDirUpdate() {
-threadsnetftphomedirupdate:
-; 106     setFtpHomeDir();
-	call setftphomedir
-; 107     getFTPHomeDir();
-	jp getftphomedir
-; 108 }
-; 109 
-; 110 void ThreadsNetFtpPasswordUpdate() {
-threadsnetftppasswordupdate:
-; 111     setFtpPassword();
-	call setftppassword
-; 112     getFTPPassword();
-	jp getftppassword
-; 113 }
-; 114 
-; 115 void ThreadsNetFtpUserUpdate() {
-threadsnetftpuserupdate:
-; 116     setFtpUser();
-	call setftpuser
-; 117     getFTPUser();
-	jp getftpuser
-; 118 }
-; 119 
-; 120 void ThreadsNetFtpServerUrlUpdate() {
-threadsnetftpserverurlupdate:
-; 121     setFtpServerUrl();
-	call setftpserverurl
-; 122     getFTPUrl();
-	jp getftpurl
-; 123 }
-; 124 
-; 125 void ThreadsNetFtpPortUpdate() {
-threadsnetftpportupdate:
-; 126     setFtpPort();
-	call setftpport
-; 127     getFTPPort();
-	jp getftpport
-; 128 }
-; 129 
-; 130 void NetUpdateData() {
-netupdatedata:
-; 131     ThreadsNetNeedUpdateFtpValue();
-	call threadsnetneedupdateftpvalue
-; 132     ThreadsNetNeedUpdateWiFiValue();
-	jp threadsnetneedupdatewifivalue
-; 133 }
-; 134 
-; 135 void delay50ms() {
-delay50ms:
-; 136     push_pop(bc) {
-	push bc
-; 137         bc = 0xFFFF;
-	ld bc, 65535
-; 138         do {
-l_477:
-; 139             bc--;
-	dec bc
-; 140             a = b;
-	ld a, b
-; 141             a |= c;
-	or c
-l_478:
-	jp nz, l_477
-	pop bc
+; 95 // ----------------------------------
+; 96 // ------------ Ftp  ----------------
+; 97 // ----------------------------------
+; 98 void ThreadsNetNeedUpdateFtpData() {
+threadsnetneedupdateftpdata:
+; 99     FtpStateViewShowValue();
+	call ftpstateviewshowvalue
+; 100     // Update ftp dir
+; 101     getFtpCurrentPathNew();
+	call getftpcurrentpathnew
+; 102     FtpViewShowPath();
+	call ftpviewshowpath
+; 103     //
+; 104     CurrentViewDiskOrFtpViewByIdA(a = CurrentViewId);
+	ld a, (currentviewid)
+	call currentviewdiskorftpviewbyida
+; 105     if (a == 1) {
+	cp 1
+	jp nz, l_503
+; 106         if ((a = FtpStateViewStatus) == 1) {
+	ld a, (ftpstateviewstatus)
+	cp 1
+	jp nz, l_505
+; 107             updateFtpList();
+	call updateftplist
+; 108             getNetFtpListNew();
+	call getnetftplistnew
+	jp l_506
+l_505:
+; 109         } else {
+; 110             FtpViewEmptyList();
+	call ftpviewemptylist
+l_506:
+; 111         }
+; 112         FtpViewListUpdateUI();
+	call ftpviewlistupdateui
+l_503:
 	ret
-; 142         } while (flag_nz);
-; 143     }
+; 113     }
+; 114 }
+; 115 
+; 116 void ThreadsNetNeedUpdateFtpValue() {
+threadsnetneedupdateftpvalue:
+; 117     getFTPUrl();
+	call getftpurl
+; 118     getFTPHomeDir();
+	call getftphomedir
+; 119     getFTPPort();
+	call getftpport
+; 120     getFTPUser();
+	call getftpuser
+; 121     getFTPPassword();
+	call getftppassword
+; 122     // UI
+; 123     FtpStateViewShowValue();
+	jp ftpstateviewshowvalue
+; 124 }
+; 125 
+; 126 void ThreadsNetFtpHomeDirUpdate() {
+threadsnetftphomedirupdate:
+; 127     setFtpHomeDir();
+	call setftphomedir
+; 128     getFTPHomeDir();
+	jp getftphomedir
+; 129 }
+; 130 
+; 131 void ThreadsNetFtpPasswordUpdate() {
+threadsnetftppasswordupdate:
+; 132     setFtpPassword();
+	call setftppassword
+; 133     getFTPPassword();
+	jp getftppassword
+; 134 }
+; 135 
+; 136 void ThreadsNetFtpUserUpdate() {
+threadsnetftpuserupdate:
+; 137     setFtpUser();
+	call setftpuser
+; 138     getFTPUser();
+	jp getftpuser
+; 139 }
+; 140 
+; 141 void ThreadsNetFtpServerUrlUpdate() {
+threadsnetftpserverurlupdate:
+; 142     setFtpServerUrl();
+	call setftpserverurl
+; 143     getFTPUrl();
+	jp getftpurl
 ; 144 }
 ; 145 
-; 146 void ThreadsTickCountNext() {
+; 146 void ThreadsNetFtpPortUpdate() {
+threadsnetftpportupdate:
+; 147     setFtpPort();
+	call setftpport
+; 148     getFTPPort();
+	jp getftpport
+; 149 }
+; 150 
+; 151 void ThreadsNetSetFtpStateA() {
+threadsnetsetftpstatea:
+; 152     push_pop(bc) {
+	push bc
+; 153         a &= 0x01;
+	and 1
+; 154         b = a;
+	ld b, a
+; 155         // Old Value
+; 156         a = FtpStateViewStatus;
+	ld a, (ftpstateviewstatus)
+; 157         c = a;
+	ld c, a
+; 158         // --
+; 159         a = b;
+	ld a, b
+; 160         FtpStateViewStatus = a;
+	ld (ftpstateviewstatus), a
+; 161         if(a != c){
+	cp c
+	jp z, l_507
+; 162             a = 0x01;
+	ld a, 1
+; 163             FtpNetStateChange = a;
+	ld (ftpnetstatechange), a
+l_507:
+	pop bc
+	ret
+; 164         }
+; 165     }
+; 166 }
+; 167 
+; 168 void ThreadsNetFtpGoToHomeDir() {
+threadsnetftpgotohomedir:
+; 169     setFtpGoToHomeDir();
+	call setftpgotohomedir
+; 170     getFtpCurrentPathNew();
+	call getftpcurrentpathnew
+; 171     FtpViewShowPath();
+	call ftpviewshowpath
+; 172     if ((a = FtpStateViewStatus) == 1) {
+	ld a, (ftpstateviewstatus)
+	cp 1
+	jp nz, l_509
+; 173         updateFtpList();
+	call updateftplist
+; 174         getNetFtpListNew();
+	call getnetftplistnew
+	jp l_510
+l_509:
+; 175     } else {
+; 176         FtpViewEmptyList();
+	call ftpviewemptylist
+l_510:
+; 177     }
+; 178     FtpViewListUpdateUI();
+	jp ftpviewlistupdateui
+; 179 }
+; 180 
+; 181 
+; 182 void NetUpdateData() {
+netupdatedata:
+; 183     ThreadsNetNeedUpdateFtpValue();
+	call threadsnetneedupdateftpvalue
+; 184     ThreadsNetNeedUpdateWiFiValue();
+	jp threadsnetneedupdatewifivalue
+; 185 }
+; 186 
+; 187 void delay50ms() {
+delay50ms:
+; 188     push_pop(bc) {
+	push bc
+; 189         bc = 0xFFFF;
+	ld bc, 65535
+; 190         do {
+l_511:
+; 191             bc--;
+	dec bc
+; 192             a = b;
+	ld a, b
+; 193             a |= c;
+	or c
+l_512:
+	jp nz, l_511
+	pop bc
+	ret
+; 194         } while (flag_nz);
+; 195     }
+; 196 }
+; 197 
+; 198 void ThreadsTickCountNext() {
 threadstickcountnext:
-; 147     push_pop(hl) {
+; 199     push_pop(hl) {
 	push hl
-; 148         hl = ThreadsTickSubCount;
+; 200         hl = ThreadsTickSubCount;
 	ld hl, (threadsticksubcount)
-; 149         // Compare hl == 0
-; 150         a = h;
+; 201         // Compare hl == 0
+; 202         a = h;
 	ld a, h
-; 151         a |= l;
+; 203         a |= l;
 	or l
-; 152         if (a == 0) {
+; 204         if (a == 0) {
 	or a
-	jp nz, l_480
-; 153             //-- TickCount ++
-; 154             a = ThreadsTickCount;
+	jp nz, l_514
+; 205             //-- TickCount ++
+; 206             a = ThreadsTickCount;
 	ld a, (threadstickcount)
-; 155             a++;
+; 207             a++;
 	inc a
-; 156             ThreadsTickCount = a;
+; 208             ThreadsTickCount = a;
 	ld (threadstickcount), a
-; 157             //-- TickSubCount = max
-; 158             hl = 0x300;
-	ld hl, 768
-	jp l_481
-l_480:
-; 159         } else {
-; 160             hl--;
+; 209             //-- TickSubCount = max
+; 210             hl = 0x800; //0x1000; //0x300;
+	ld hl, 2048
+	jp l_515
+l_514:
+; 211         } else {
+; 212             hl--;
 	dec hl
-l_481:
-; 161         }
-; 162         ThreadsTickSubCount = hl;
+l_515:
+; 213         }
+; 214         ThreadsTickSubCount = hl;
 	ld (threadsticksubcount), hl
 	pop hl
 	ret
-; 163     }
-; 164 }
-; 165 
-; 166 uint16_t ThreadsTickSubCount = 0x0000;
+; 215     }
+; 216 }
+; 217 
+; 218 uint16_t ThreadsTickSubCount = 0x0000;
 threadsticksubcount:
 	dw 0
-; 167 uint8_t ThreadsTickCount = 0;
+; 219 uint8_t ThreadsTickCount = 0;
 threadstickcount:
 	db 0
 ; 11 void convertKeyToMyFontA() {
@@ -7508,60 +7918,60 @@ convertkeytomyfonta:
 ; 15         if ((a = keyRusAddress) == 0) { //0 лат
 	ld a, (keyrusaddress)
 	or a
-	jp nz, l_482
+	jp nz, l_516
 ; 16             // Меняем заглавные на маленькие
 ; 17             if ((a = b) >= 0x41) {
 	ld a, b
 	cp 65
-	jp c, l_484
+	jp c, l_518
 ; 18                 if ((a = b) < 0x5B) {
 	ld a, b
 	cp 91
-	jp nc, l_486
+	jp nc, l_520
 ; 19                     a = b;
 	ld a, b
 ; 20                     a += 0x20;
 	add 32
 ; 21                     c = a;
 	ld c, a
-l_486:
-l_484:
+l_520:
+l_518:
 ; 22                 }
 ; 23             }
 ; 24             // Меняем маленькие на заглавные
 ; 25             if ((a = b) >= 0x61) {
 	ld a, b
 	cp 97
-	jp c, l_488
+	jp c, l_522
 ; 26                 if ((a = b) < 0x7B) {
 	ld a, b
 	cp 123
-	jp nc, l_490
+	jp nc, l_524
 ; 27                     a = b;
 	ld a, b
 ; 28                     a -= 0x20;
 	sub 32
 ; 29                     c = a;
 	ld c, a
-l_490:
-l_488:
-	jp l_483
-l_482:
+l_524:
+l_522:
+	jp l_517
+l_516:
 ; 30                 }
 ; 31             }
 ; 32         } else if ((a = keyRusAddress) == 0xFF) { // rus
 	ld a, (keyrusaddress)
 	cp 255
-	jp nz, l_492
+	jp nz, l_526
 ; 33             // Меняем заглавные английские на заглавные русские
 ; 34             if ((a = b) >= 0x41) {
 	ld a, b
 	cp 65
-	jp c, l_494
+	jp c, l_528
 ; 35                 if ((a = b) < 0x5B) {
 	ld a, b
 	cp 91
-	jp nc, l_496
+	jp nc, l_530
 ; 36                     a = b;
 	ld a, b
 ; 37                     a += 0x3F;
@@ -7571,19 +7981,19 @@ l_482:
 ; 39                     KeyboardConverRusCharC(a = 1);
 	ld a, 1
 	call keyboardconverruscharc
-l_496:
-l_494:
+l_530:
+l_528:
 ; 40                 }
 ; 41             }
 ; 42             // Меняем маленькие английские на маленькие русские
 ; 43             if ((a = b) >= 0x61) {
 	ld a, b
 	cp 97
-	jp c, l_498
+	jp c, l_532
 ; 44                 if ((a = b) < 0x7B) {
 	ld a, b
 	cp 123
-	jp nc, l_500
+	jp nc, l_534
 ; 45                     a = b;
 	ld a, b
 ; 46                     a += 0x3F;
@@ -7598,16 +8008,16 @@ l_494:
 ; 51                     if ((a = c) >= 0xB0) {
 	ld a, c
 	cp 176
-	jp c, l_502
+	jp c, l_536
 ; 52                         a = c;
 	ld a, c
 ; 53                         a += 0x30;
 	add 48
 ; 54                         c = a;
 	ld c, a
-l_502:
-l_500:
-l_498:
+l_536:
+l_534:
+l_532:
 ; 55                     }
 ; 56                 }
 ; 57             }
@@ -7620,14 +8030,14 @@ l_498:
 	call keyboardbordore
 ; 62             if (a == 1) {
 	cp 1
-	jp nz, l_504
+	jp nz, l_538
 ; 63                 a = b;
 	ld a, b
 ; 64                 a += 0x5E;
 	add 94
 ; 65                 c = a;
 	ld c, a
-l_504:
+l_538:
 ; 66             }
 ; 67             // Э
 ; 68             d = 0x5C;
@@ -7638,14 +8048,14 @@ l_504:
 	call keyboardbordore
 ; 71             if (a == 1) {
 	cp 1
-	jp nz, l_506
+	jp nz, l_540
 ; 72                 a = b;
 	ld a, b
 ; 73                 a += 0x41;
 	add 65
 ; 74                 c = a;
 	ld c, a
-l_506:
+l_540:
 ; 75             }
 ; 76             // Ч
 ; 77             d = 0x5E;
@@ -7656,14 +8066,14 @@ l_506:
 	call keyboardbordore
 ; 80             if (a == 1) {
 	cp 1
-	jp nz, l_508
+	jp nz, l_542
 ; 81                 a = b;
 	ld a, b
 ; 82                 a += 0x39;
 	add 57
 ; 83                 c = a;
 	ld c, a
-l_508:
+l_542:
 ; 84             }
 ; 85             // Ш
 ; 86             d = 0x5B;
@@ -7674,14 +8084,14 @@ l_508:
 	call keyboardbordore
 ; 89             if (a == 1) {
 	cp 1
-	jp nz, l_510
+	jp nz, l_544
 ; 90                 a = b;
 	ld a, b
 ; 91                 a += 0x3D;
 	add 61
 ; 92                 c = a;
 	ld c, a
-l_510:
+l_544:
 ; 93             }
 ; 94             // Щ
 ; 95             d = 0x5D;
@@ -7692,38 +8102,38 @@ l_510:
 	call keyboardbordore
 ; 98             if (a == 1) {
 	cp 1
-	jp nz, l_512
+	jp nz, l_546
 ; 99                 a = b;
 	ld a, b
 ; 100                 a += 0x3C;
 	add 60
 ; 101                 c = a;
 	ld c, a
-l_512:
+l_546:
 ; 102             }
 ; 103             if ((a = c) >= 0xB0) {
 	ld a, c
 	cp 176
-	jp c, l_514
+	jp c, l_548
 ; 104                 if ((a = c) < 0xC0) {
 	ld a, c
 	cp 192
-	jp nc, l_516
+	jp nc, l_550
 ; 105                     a = c;
 	ld a, c
 ; 106                     a += 0x30;
 	add 48
 ; 107                     c = a;
 	ld c, a
-l_516:
-l_514:
-	jp l_493
-l_492:
+l_550:
+l_548:
+	jp l_527
+l_526:
 ; 108                 }
 ; 109             }
 ; 110         } else {
-l_493:
-l_483:
+l_527:
+l_517:
 ; 111             
 ; 112         }
 ; 113         a = c;
@@ -7740,24 +8150,24 @@ keyboardbordore:
 ; 119         if ((a = b) == d) {
 	ld a, b
 	cp d
-	jp nz, l_518
+	jp nz, l_552
 ; 120             h = 1;
 	ld h, 1
-	jp l_519
-l_518:
+	jp l_553
+l_552:
 ; 121         } else if ((a = b) == e) {
 	ld a, b
 	cp e
-	jp nz, l_520
+	jp nz, l_554
 ; 122             h = 1;
 	ld h, 1
-	jp l_521
-l_520:
+	jp l_555
+l_554:
 ; 123         } else {
 ; 124             h = 0;
 	ld h, 0
-l_521:
-l_519:
+l_555:
+l_553:
 ; 125         }
 ; 126         a = h;
 	ld a, h
@@ -7775,15 +8185,15 @@ keyboardconverruscharc:
 	push de
 ; 134         if (a == 0) {
 	or a
-	jp nz, l_522
+	jp nz, l_556
 ; 135             a = c;
 	ld a, c
 ; 136             a -= 0xA0;
 	sub 160
 ; 137             e = a;
 	ld e, a
-	jp l_523
-l_522:
+	jp l_557
+l_556:
 ; 138         } else {
 ; 139             a = c;
 	ld a, c
@@ -7791,7 +8201,7 @@ l_522:
 	sub 128
 ; 141             e = a;
 	ld e, a
-l_523:
+l_557:
 ; 142         }
 ; 143         d = 0;
 	ld d, 0
@@ -7946,17 +8356,17 @@ wifisettingsviewshowtitle:
 ; 58         b = a;
 	ld b, a
 ; 59         do {
-l_524:
+l_558:
 ; 60             printMyChatA(a = 0x5F);
 	ld a, 95
 	call printmychata
 ; 61             b--;
 	dec b
-l_525:
+l_559:
 ; 62         } while ((a = b) > 0);
 	ld a, b
 	or a
-	jp nz, l_524
+	jp nz, l_558
 ; 63         // SSID
 ; 64         a = WiFiSettingsViewX;
 	ld a, (wifisettingsviewx)
@@ -8025,15 +8435,15 @@ l_525:
 ; 96         if ((a = WifiStateViewSSIDIsConnected) == 0) {
 	ld a, (wifistateviewssidisconnected)
 	or a
-	jp nz, l_527
+	jp nz, l_561
 ; 97             bc = WiFiSettingsViewButtonTitle;
 	ld bc, wifisettingsviewbuttontitle
-	jp l_528
-l_527:
+	jp l_562
+l_561:
 ; 98         } else {
 ; 99             bc = strOK;
 	ld bc, strok
-l_528:
+l_562:
 ; 100         }
 ; 101         ButtonShadowViewShow();
 	call buttonshadowviewshow
@@ -8126,49 +8536,49 @@ wifisettingsviewkeya:
 ; 145         if ((a = c) == 0) {
 	ld a, c
 	or a
-	jp nz, l_529
+	jp nz, l_563
 ; 146             if ((a = CurrentViewId) == WiFiSettingsViewId) {
 	ld a, (currentviewid)
 	cp 5
-	jp nz, l_531
+	jp nz, l_565
 ; 147                 if ((a = l) == 0x1B) { //ESC выход
 	ld a, l
 	cp 27
-	jp nz, l_533
+	jp nz, l_567
 ; 148                     WiFiSettingsViewClose();
 	call wifisettingsviewclose
-	jp l_534
-l_533:
+	jp l_568
+l_567:
 ; 149                 } else if ((a = l) == 0x0D) { // Выбор
 	ld a, l
 	cp 13
-	jp nz, l_535
+	jp nz, l_569
 ; 150                     if ((a = WiFiSettingsViewSelectPos) == 0) { // OK
 	ld a, (wifisettingsviewselectpos)
 	or a
-	jp nz, l_537
+	jp nz, l_571
 ; 151                         WiFiSettingsViewClose();
 	call wifisettingsviewclose
 ; 152                         if ((a = WifiStateViewSSIDIsConnected) == 0) {
 	ld a, (wifistateviewssidisconnected)
 	or a
-	jp nz, l_539
+	jp nz, l_573
 ; 153                             needSsidConnect();
 	call needssidconnect
 ; 154                             ThreadsTickNow();
 	call threadsticknow
-l_539:
-	jp l_538
-l_537:
+l_573:
+	jp l_572
+l_571:
 ; 155                         }
 ; 156                     } else if ((a = WiFiSettingsViewSelectPos) == 1) { // Выбор SSID
 	ld a, (wifisettingsviewselectpos)
 	cp 1
-	jp nz, l_541
+	jp nz, l_575
 ; 157                         WiFiNetworksViewShow();
 	call wifinetworksviewshow
-	jp l_542
-l_541:
+	jp l_576
+l_575:
 ; 158                     } else { // Переход в редактирование
 ; 159                         WiFiSettingsViewByPosBoxValue();
 	call wifisettingsviewbyposboxvalue
@@ -8178,7 +8588,7 @@ l_541:
 	call editfieldviewshow
 ; 162                         if (a == 1) { // что то изменилось
 	cp 1
-	jp nz, l_543
+	jp nz, l_577
 ; 163                             #ifdef _IS_SIMULATOR
 ; 164 
 ; 165                             #else
@@ -8187,35 +8597,35 @@ l_541:
 ; 167                             #endif
 ; 168                             WiFiSettingsViewShowValue();
 	call wifisettingsviewshowvalue
-l_543:
-l_542:
-l_538:
-	jp l_536
-l_535:
+l_577:
+l_576:
+l_572:
+	jp l_570
+l_569:
 ; 169                         }
 ; 170                     }
 ; 171                 } else if ((a = l) == 0x1A) { //down
 	ld a, l
 	cp 26
-	jp nz, l_545
+	jp nz, l_579
 ; 172                     WiFiSettingsViewPosUpdateA(a = 0x01);
 	ld a, 1
 	call wifisettingsviewposupdatea
-	jp l_546
-l_545:
+	jp l_580
+l_579:
 ; 173                 } else if ((a = l) == 0x19) { //up
 	ld a, l
 	cp 25
-	jp nz, l_547
+	jp nz, l_581
 ; 174                     WiFiSettingsViewPosUpdateA(a = 0xFF);
 	ld a, 255
 	call wifisettingsviewposupdatea
-l_547:
-l_546:
-l_536:
-l_534:
-l_531:
-l_529:
+l_581:
+l_580:
+l_570:
+l_568:
+l_565:
+l_563:
 	pop hl
 	ret
 ; 175                 }
@@ -8232,15 +8642,15 @@ wifisettingsviewbyposvalue:
 ; 184         if ((a = WiFiSettingsViewSelectPos) == 2) {
 	ld a, (wifisettingsviewselectpos)
 	cp 2
-	jp nz, l_549
+	jp nz, l_583
 ; 185             bc = WifiStateViewPassVal;
 	ld bc, wifistateviewpassval
-	jp l_550
-l_549:
+	jp l_584
+l_583:
 ; 186         } else {
 ; 187             bc = 0;
 	ld bc, 0
-l_550:
+l_584:
 	pop hl
 	ret
 ; 188         }        
@@ -8302,12 +8712,12 @@ wifisettingsviewselectlinea:
 ; 222         if ((a = WiFiSettingsViewSelectPos) == 0) {
 	ld a, (wifisettingsviewselectpos)
 	or a
-	jp nz, l_551
+	jp nz, l_585
 ; 223             ButtonShadowViewSelectA(a = c);
 	ld a, c
 	call buttonshadowviewselecta
-	jp l_552
-l_551:
+	jp l_586
+l_585:
 ; 224         } else {
 ; 225             WiFiSettingsViewByPosBoxValue();
 	call wifisettingsviewbyposboxvalue
@@ -8315,15 +8725,15 @@ l_551:
 ; 227             if ((a = c) == 0) {
 	ld a, c
 	or a
-	jp nz, l_553
+	jp nz, l_587
 ; 228                 a = WiFiSettingsViewColor;
 	ld a, (wifisettingsviewcolor)
-	jp l_554
-l_553:
+	jp l_588
+l_587:
 ; 229             } else {
 ; 230                 a = WiFiSettingsViewInvColor;
 	ld a, (wifisettingsviewinvcolor)
-l_554:
+l_588:
 ; 231             }
 ; 232             c = a;
 	ld c, a
@@ -8332,7 +8742,7 @@ l_554:
 	ld a, 4
 ; 235             vboxOpenHLDECA();
 	call vboxopenhldeca
-l_552:
+l_586:
 	pop hl
 	pop bc
 	ret
@@ -8353,12 +8763,12 @@ wifisettingsviewposupdatea:
 	ld b, a
 ; 248         if (a == 0) {
 	or a
-	jp nz, l_555
+	jp nz, l_589
 ; 249             WiFiSettingsViewSelectLineA(a = 1);
 	ld a, 1
 	call wifisettingsviewselectlinea
-	jp l_556
-l_555:
+	jp l_590
+l_589:
 ; 250         } else {
 ; 251             a = 3;
 	ld a, 3
@@ -8374,20 +8784,20 @@ l_555:
 ; 256             //-- FIX
 ; 257             if (a == 0xFF) {
 	cp 255
-	jp nz, l_557
+	jp nz, l_591
 ; 258                 a = c;
 	ld a, c
 ; 259                 a--;
 	dec a
-	jp l_558
-l_557:
+	jp l_592
+l_591:
 ; 260             } else if (a == c) {
 	cp c
-	jp nz, l_559
+	jp nz, l_593
 ; 261                 a = 0;
 	ld a, 0
-l_559:
-l_558:
+l_593:
+l_592:
 ; 262             }
 ; 263             //--
 ; 264             WiFiSettingsViewSelectPos = a;
@@ -8395,7 +8805,7 @@ l_558:
 ; 265             WiFiSettingsViewSelectLineA(a = 1);
 	ld a, 1
 	call wifisettingsviewselectlinea
-l_556:
+l_590:
 	pop bc
 	ret
 ; 266         }
@@ -8548,7 +8958,7 @@ editfieldviewloopkey:
 ; 58         b = 0;
 	ld b, 0
 ; 59         do {
-l_561:
+l_595:
 ; 60             getKeyboardCharA();
 	call getkeyboardchara
 ; 61             c = a;
@@ -8556,34 +8966,34 @@ l_561:
 ; 62             if ((a = c) == 0x1B) { //ESC выход
 	ld a, c
 	cp 27
-	jp nz, l_564
+	jp nz, l_598
 ; 63                 b = 1;
 	ld b, 1
-	jp l_565
-l_564:
+	jp l_599
+l_598:
 ; 64             } else if ((a = c) == 0x7F) { //Забой... (удаление символа)
 	ld a, c
 	cp 127
-	jp nz, l_566
+	jp nz, l_600
 ; 65                 a = EditFieldViewEditTextPos;
 	ld a, (editfieldviewedittextpos)
 ; 66                 if (a > 0) {
 	or a
-	jp z, l_568
+	jp z, l_602
 ; 67                     a--;
 	dec a
 ; 68                     EditFieldViewEditTextPos = a;
 	ld (editfieldviewedittextpos), a
-l_568:
+l_602:
 ; 69                 }
 ; 70                 EditFieldViewShowTextValue();
 	call editfieldviewshowtextvalue
-	jp l_567
-l_566:
+	jp l_601
+l_600:
 ; 71             } else if ((a = c) == 0x0D) { // Сохранить и выйти из редактирования
 	ld a, c
 	cp 13
-	jp nz, l_570
+	jp nz, l_604
 ; 72                 a = 1;
 	ld a, 1
 ; 73                 EditFieldViewTextIsChanged = a;
@@ -8592,21 +9002,21 @@ l_566:
 	call editfieldviewtextsave
 ; 75                 b = 1;
 	ld b, 1
-	jp l_571
-l_570:
+	jp l_605
+l_604:
 ; 76             } else if ((a = c) < 0x20) { // ничего не делаем
 	ld a, c
 	cp 32
-	jp nc, l_572
-	jp l_573
-l_572:
+	jp nc, l_606
+	jp l_607
+l_606:
 ; 77                 
 ; 78             } else {
 ; 79                 a = EditFieldViewEditTextPos;
 	ld a, (editfieldviewedittextpos)
 ; 80                 if (a < 15) {
 	cp 15
-	jp nc, l_574
+	jp nc, l_608
 ; 81                     d = 0;
 	ld d, 0
 ; 82                     e = a;
@@ -8631,18 +9041,18 @@ l_572:
 ; 92                     //--
 ; 93                     EditFieldViewShowTextValue();
 	call editfieldviewshowtextvalue
-l_574:
-l_573:
-l_571:
-l_567:
-l_565:
-l_562:
+l_608:
+l_607:
+l_605:
+l_601:
+l_599:
+l_596:
 ; 94                 }
 ; 95             }
 ; 96         } while ((a = b) == 0);
 	ld a, b
 	or a
-	jp z, l_561
+	jp z, l_595
 	pop de
 	pop bc
 ; 97     }
@@ -8678,9 +9088,9 @@ editfieldviewshowtextvalue:
 ; 114         if ((a = b) > 0) {
 	ld a, b
 	or a
-	jp z, l_576
+	jp z, l_610
 ; 115             do {
-l_578:
+l_612:
 ; 116                 printMyChatA(a = *hl);
 	ld a, (hl)
 	call printmychata
@@ -8688,12 +9098,12 @@ l_578:
 	inc hl
 ; 118                 c--;
 	dec c
-l_579:
+l_613:
 ; 119             } while ((a = c) > 0);
 	ld a, c
 	or a
-	jp nz, l_578
-l_576:
+	jp nz, l_612
+l_610:
 ; 120         }
 ; 121         // Clear
 ; 122         a = 16; // Max char array
@@ -8703,17 +9113,17 @@ l_576:
 ; 124         c = a;
 	ld c, a
 ; 125         do {
-l_581:
+l_615:
 ; 126             printMyChatA(a = ' ');
 	ld a, 32
 	call printmychata
 ; 127             c--;
 	dec c
-l_582:
+l_616:
 ; 128         } while ((a = c) > 0);
 	ld a, c
 	or a
-	jp nz, l_581
+	jp nz, l_615
 	pop hl
 	pop bc
 	ret
@@ -8736,12 +9146,12 @@ editfieldviewtextcopy:
 ; 138         b = 0;
 	ld b, 0
 ; 139         do {
-l_584:
+l_618:
 ; 140             a = *hl;
 	ld a, (hl)
 ; 141             if (a > 0) {
 	or a
-	jp z, l_587
+	jp z, l_621
 ; 142                 b++;
 	inc b
 ; 143                 *de = a;
@@ -8750,8 +9160,8 @@ l_584:
 	inc hl
 ; 145                 de++;
 	inc de
-	jp l_588
-l_587:
+	jp l_622
+l_621:
 ; 146             } else {
 ; 147                 a = b;
 	ld a, b
@@ -8759,13 +9169,13 @@ l_587:
 	ld (editfieldviewedittextpos), a
 ; 149                 c = 0;
 	ld c, 0
-l_588:
-l_585:
+l_622:
+l_619:
 ; 150             }
 ; 151         } while ((a = c) == 1);
 	ld a, c
 	cp 1
-	jp z, l_584
+	jp z, l_618
 	pop hl
 	pop de
 	pop bc
@@ -8779,7 +9189,7 @@ editfieldviewtextsave:
 	ld a, (editfieldviewedittextpos)
 ; 157     if (a == 0) {
 	or a
-	jp nz, l_589
+	jp nz, l_623
 ; 158         push_pop(hl) {
 	push hl
 ; 159             hl = EditFieldViewTextPoint;
@@ -8787,8 +9197,8 @@ editfieldviewtextsave:
 ; 160             *hl = 0;
 	ld (hl), 0
 	pop hl
-	jp l_590
-l_589:
+	jp l_624
+l_623:
 ; 161         }
 ; 162     } else {
 ; 163         push_pop(bc, de, hl) {
@@ -8802,7 +9212,7 @@ l_589:
 ; 166             hl = EditFieldViewTextPoint;
 	ld hl, (editfieldviewtextpoint)
 ; 167             do {
-l_591:
+l_625:
 ; 168                 a = *de;
 	ld a, (de)
 ; 169                 *hl = a;
@@ -8813,17 +9223,17 @@ l_591:
 	inc de
 ; 172                 b--;
 	dec b
-l_592:
+l_626:
 ; 173             } while ((a = b) > 0);
 	ld a, b
 	or a
-	jp nz, l_591
+	jp nz, l_625
 ; 174             *hl = 0;
 	ld (hl), 0
 	pop hl
 	pop de
 	pop bc
-l_590:
+l_624:
 	ret
 ; 175         }
 ; 176     }
@@ -8947,27 +9357,27 @@ wifinetworksviewfixdata:
 ; 55         b = 16;
 	ld b, 16
 ; 56         do {
-l_594:
+l_628:
 ; 57             a = *hl;
 	ld a, (hl)
 ; 58             if (a == 0) {
 	or a
-	jp nz, l_597
+	jp nz, l_631
 ; 59                 a = '-';
 	ld a, 45
 ; 60                 *hl = a;
 	ld (hl), a
-l_597:
+l_631:
 ; 61             }
 ; 62             hl += de;
 	add hl, de
 ; 63             b--;
 	dec b
-l_595:
+l_629:
 ; 64         } while ((a = b) > 0);
 	ld a, b
 	or a
-	jp nz, l_594
+	jp nz, l_628
 	pop de
 	pop bc
 	pop hl
@@ -9017,17 +9427,17 @@ wifinetworksviewshowtitle:
 ; 87         b = a;
 	ld b, a
 ; 88         do {
-l_599:
+l_633:
 ; 89             printMyChatA(a = 0x5F);
 	ld a, 95
 	call printmychata
 ; 90             b--;
 	dec b
-l_600:
+l_634:
 ; 91         } while ((a = b) > 0);
 	ld a, b
 	or a
-	jp nz, l_599
+	jp nz, l_633
 	pop de
 	pop bc
 	pop hl
@@ -9052,23 +9462,23 @@ wifinetworksviewkeya:
 ; 103         if ((a = c) == 0) {
 	ld a, c
 	or a
-	jp nz, l_602
+	jp nz, l_636
 ; 104             if ((a = CurrentViewId) == WiFiNetworksViewId) {
 	ld a, (currentviewid)
 	cp 7
-	jp nz, l_604
+	jp nz, l_638
 ; 105                 if ((a = l) == 0x1B) { //ESC выход
 	ld a, l
 	cp 27
-	jp nz, l_606
+	jp nz, l_640
 ; 106                     WiFiNetworksViewClose();
 	call wifinetworksviewclose
-	jp l_607
-l_606:
+	jp l_641
+l_640:
 ; 107                 } else if ((a = l) == 0x0D) { // Выбор
 	ld a, l
 	cp 13
-	jp nz, l_608
+	jp nz, l_642
 ; 108                     WiFiNetworksViewClose();
 	call wifinetworksviewclose
 ; 109                     //--
@@ -9081,31 +9491,31 @@ l_606:
 ; 114                     #endif
 ; 115                     WiFiSettingsViewShowValue();
 	call wifisettingsviewshowvalue
-	jp l_609
-l_608:
+	jp l_643
+l_642:
 ; 116                     //--
 ; 117                 } else if ((a = l) == 0x1A) { //down
 	ld a, l
 	cp 26
-	jp nz, l_610
+	jp nz, l_644
 ; 118                     WiFiNetworksViewPosUpdateA(a = 0x01);
 	ld a, 1
 	call wifinetworksviewposupdatea
-	jp l_611
-l_610:
+	jp l_645
+l_644:
 ; 119                 } else if ((a = l) == 0x19) { //up
 	ld a, l
 	cp 25
-	jp nz, l_612
+	jp nz, l_646
 ; 120                     WiFiNetworksViewPosUpdateA(a = 0xFF);
 	ld a, 255
 	call wifinetworksviewposupdatea
-l_612:
-l_611:
-l_609:
-l_607:
-l_604:
-l_602:
+l_646:
+l_645:
+l_643:
+l_641:
+l_638:
+l_636:
 	pop hl
 	ret
 ; 121                 }
@@ -9145,17 +9555,17 @@ wifinetworksviewcopyssidforsimul:
 ; 139         c = 0; // is 0 exist
 	ld c, 0
 ; 140         do {
-l_614:
+l_648:
 ; 141             a = *hl;
 	ld a, (hl)
 ; 142             *de = a;
 	ld (de), a
 ; 143             if (a == 0) {
 	or a
-	jp nz, l_617
+	jp nz, l_651
 ; 144                 c = 1;
 	ld c, 1
-l_617:
+l_651:
 ; 145             }
 ; 146             hl++;
 	inc hl
@@ -9163,23 +9573,23 @@ l_617:
 	inc de
 ; 148             b--;
 	dec b
-l_615:
+l_649:
 ; 149         } while ((a = b) > 0);
 	ld a, b
 	or a
-	jp nz, l_614
+	jp nz, l_648
 ; 150         //-- if stop byte (0)
 ; 151         if ((a = c) == 0) {
 	ld a, c
 	or a
-	jp nz, l_619
+	jp nz, l_653
 ; 152             de--;
 	dec de
 ; 153             a = 0;
 	ld a, 0
 ; 154             *de = a;
 	ld (de), a
-l_619:
+l_653:
 	pop de
 	pop bc
 	pop hl
@@ -9198,18 +9608,18 @@ wifinetworksviewcleardata:
 ; 162         b = 0xFF;
 	ld b, 255
 ; 163         do {
-l_621:
+l_655:
 ; 164             *hl = 0;
 	ld (hl), 0
 ; 165             hl++;
 	inc hl
 ; 166             b--;
 	dec b
-l_622:
+l_656:
 ; 167         } while ((a = b) > 0);
 	ld a, b
 	or a
-	jp nz, l_621
+	jp nz, l_655
 	pop bc
 	pop hl
 	ret
@@ -9241,7 +9651,7 @@ wifinetworksviewshowlist:
 	ld e, a
 ; 182         //
 ; 183         do {
-l_624:
+l_658:
 ; 184             //--
 ; 185             a = e;
 	ld a, e
@@ -9257,7 +9667,7 @@ l_624:
 ; 191             b = 16;
 	ld b, 16
 ; 192             do {
-l_627:
+l_661:
 ; 193                 printMyChatA(a = *hl);
 	ld a, (hl)
 	call printmychata
@@ -9265,18 +9675,18 @@ l_627:
 	inc hl
 ; 195                 b--;
 	dec b
-l_628:
+l_662:
 ; 196             } while ((a = b) > 0);
 	ld a, b
 	or a
-	jp nz, l_627
+	jp nz, l_661
 ; 197             c++;
 	inc c
-l_625:
+l_659:
 ; 198         } while ((a = WiFiNetworksViewSSIDCount) >= c);
 	ld a, (wifinetworksviewssidcount)
 	cp c
-	jp nc, l_624
+	jp nc, l_658
 ; 199         // Crean
 ; 200         a = WiFiNetworksViewSSIDCount;
 	ld a, (wifinetworksviewssidcount)
@@ -9288,7 +9698,7 @@ l_625:
 	sub c
 ; 204         if (a > 0) { // До добавляем пустые строки
 	or a
-	jp z, l_630
+	jp z, l_664
 ; 205             b = a;
 	ld b, a
 ; 206             //--
@@ -9302,7 +9712,7 @@ l_625:
 ; 211             h = 0;
 	ld h, 0
 ; 212             do {
-l_632:
+l_666:
 ; 213                 //--
 ; 214                 a = e;
 	ld a, e
@@ -9318,27 +9728,27 @@ l_632:
 ; 220                 c = 16;
 	ld c, 16
 ; 221                 do {
-l_635:
+l_669:
 ; 222                     printMyChatA(a = ' ');
 	ld a, 32
 	call printmychata
 ; 223                     c--;
 	dec c
-l_636:
+l_670:
 ; 224                 } while ((a = c) > 0);
 	ld a, c
 	or a
-	jp nz, l_635
+	jp nz, l_669
 ; 225                 b--;
 	dec b
 ; 226                 h++;
 	inc h
-l_633:
+l_667:
 ; 227             } while ((a = b) > 0);
 	ld a, b
 	or a
-	jp nz, l_632
-l_630:
+	jp nz, l_666
+l_664:
 	pop de
 	pop bc
 	pop hl
@@ -9360,12 +9770,12 @@ wifinetworksviewposupdatea:
 	ld b, a
 ; 240         if (a == 0) {
 	or a
-	jp nz, l_638
+	jp nz, l_672
 ; 241             WiFiNetworksViewSelectLineA(a = 1);
 	ld a, 1
 	call wifinetworksviewselectlinea
-	jp l_639
-l_638:
+	jp l_673
+l_672:
 ; 242         } else {
 ; 243             a = WiFiNetworksViewSSIDCount;
 	ld a, (wifinetworksviewssidcount)
@@ -9377,13 +9787,13 @@ l_638:
 ; 246             if ((a = c) == 0) { // нет ни одной записи
 	ld a, c
 	or a
-	jp nz, l_640
+	jp nz, l_674
 ; 247                 a = 0;
 	ld a, 0
 ; 248                 WiFiNetworksViewSelectPos = a;
 	ld (wifinetworksviewselectpos), a
-	jp l_641
-l_640:
+	jp l_675
+l_674:
 ; 249             } else { // если есть хоть одна запись
 ; 250                 a = WiFiNetworksViewSelectPos;
 	ld a, (wifinetworksviewselectpos)
@@ -9392,30 +9802,30 @@ l_640:
 ; 252                 //-- FIX
 ; 253                 if (a == 0xFF) {
 	cp 255
-	jp nz, l_642
+	jp nz, l_676
 ; 254                     a = c;
 	ld a, c
 ; 255                     a--;
 	dec a
-	jp l_643
-l_642:
+	jp l_677
+l_676:
 ; 256                 } else if (a == c) {
 	cp c
-	jp nz, l_644
+	jp nz, l_678
 ; 257                     a = 0;
 	ld a, 0
-l_644:
-l_643:
+l_678:
+l_677:
 ; 258                 }
 ; 259                 //--
 ; 260                 WiFiNetworksViewSelectPos = a;
 	ld (wifinetworksviewselectpos), a
-l_641:
+l_675:
 ; 261             }
 ; 262             WiFiNetworksViewSelectLineA(a = 1);
 	ld a, 1
 	call wifinetworksviewselectlinea
-l_639:
+l_673:
 	pop bc
 	ret
 ; 263         }
@@ -9466,15 +9876,15 @@ wifinetworksviewselectlinea:
 ; 290         if ((a = c) == 0) {
 	ld a, c
 	or a
-	jp nz, l_646
+	jp nz, l_680
 ; 291             a = WiFiNetworksViewColor;
 	ld a, (wifinetworksviewcolor)
-	jp l_647
-l_646:
+	jp l_681
+l_680:
 ; 292         } else {
 ; 293             a = WiFiNetworksViewInvColor;
 	ld a, (wifinetworksviewinvcolor)
-l_647:
+l_681:
 ; 294         }
 ; 295         c = a;
 	ld c, a
@@ -9898,17 +10308,17 @@ ftpsettingsviewshowtitle:
 ; 63         b = a;
 	ld b, a
 ; 64         do {
-l_648:
+l_682:
 ; 65             printMyChatA(a = 0x5F);
 	ld a, 95
 	call printmychata
 ; 66             b--;
 	dec b
-l_649:
+l_683:
 ; 67         } while ((a = b) > 0);
 	ld a, b
 	or a
-	jp nz, l_648
+	jp nz, l_682
 ; 68         // IP
 ; 69         a = FtpSettingsViewX;
 	ld a, (ftpsettingsviewx)
@@ -9989,15 +10399,15 @@ l_649:
 ; 107         if ((a = FtpStateViewStatus) == 0) {
 	ld a, (ftpstateviewstatus)
 	or a
-	jp nz, l_651
+	jp nz, l_685
 ; 108             bc = WiFiSettingsViewButtonTitle;
 	ld bc, wifisettingsviewbuttontitle
-	jp l_652
-l_651:
+	jp l_686
+l_685:
 ; 109         } else {
 ; 110             bc = strOK;
 	ld bc, strok
-l_652:
+l_686:
 ; 111         }
 ; 112         
 ; 113         d = 13;
@@ -10128,51 +10538,51 @@ ftpsettingsviewbyposvalue:
 ; 175     if ((a = FtpSettingsViewSelectPos) == 1) {
 	ld a, (ftpsettingsviewselectpos)
 	cp 1
-	jp nz, l_653
+	jp nz, l_687
 ; 176         bc = FtpStateViewIpValue;
 	ld bc, ftpstateviewipvalue
-	jp l_654
-l_653:
+	jp l_688
+l_687:
 ; 177     } else if ((a = FtpSettingsViewSelectPos) == 2) {
 	ld a, (ftpsettingsviewselectpos)
 	cp 2
-	jp nz, l_655
+	jp nz, l_689
 ; 178         bc = FtpSettingsViewValuePort;
 	ld bc, ftpsettingsviewvalueport
-	jp l_656
-l_655:
+	jp l_690
+l_689:
 ; 179     } else if ((a = FtpSettingsViewSelectPos) == 3) {
 	ld a, (ftpsettingsviewselectpos)
 	cp 3
-	jp nz, l_657
+	jp nz, l_691
 ; 180         bc = FtpSettingsViewValueUser;
 	ld bc, ftpsettingsviewvalueuser
-	jp l_658
-l_657:
+	jp l_692
+l_691:
 ; 181     } else if ((a = FtpSettingsViewSelectPos) == 4) {
 	ld a, (ftpsettingsviewselectpos)
 	cp 4
-	jp nz, l_659
+	jp nz, l_693
 ; 182         bc = FtpSettingsViewValuePass;
 	ld bc, ftpsettingsviewvaluepass
-	jp l_660
-l_659:
+	jp l_694
+l_693:
 ; 183     } else if ((a = FtpSettingsViewSelectPos) == 5) {
 	ld a, (ftpsettingsviewselectpos)
 	cp 5
-	jp nz, l_661
+	jp nz, l_695
 ; 184         bc = FtpSettingsViewValueHomeDir;
 	ld bc, ftpsettingsviewvaluehomedir
-	jp l_662
-l_661:
+	jp l_696
+l_695:
 ; 185     } else {
 ; 186         bc = 0;
 	ld bc, 0
-l_662:
-l_660:
-l_658:
-l_656:
-l_654:
+l_696:
+l_694:
+l_692:
+l_690:
+l_688:
 	ret
 ; 187     }
 ; 188 }
@@ -10231,12 +10641,12 @@ ftpsettingsviewposupdatea:
 	ld b, a
 ; 221         if (a == 0) {
 	or a
-	jp nz, l_663
+	jp nz, l_697
 ; 222             FtpSettingsViewSelectLineA(a = 1);
 	ld a, 1
 	call ftpsettingsviewselectlinea
-	jp l_664
-l_663:
+	jp l_698
+l_697:
 ; 223         } else {
 ; 224             a = 6;
 	ld a, 6
@@ -10255,21 +10665,21 @@ l_663:
 ; 231             if ((a = b) == 0xFF) {
 	ld a, b
 	cp 255
-	jp nz, l_665
+	jp nz, l_699
 ; 232                 a = c;
 	ld a, c
 ; 233                 a--;
 	dec a
-	jp l_666
-l_665:
+	jp l_700
+l_699:
 ; 234             } else if ((a = b) == c) {
 	ld a, b
 	cp c
-	jp nz, l_667
+	jp nz, l_701
 ; 235                 a = 0;
 	ld a, 0
-l_667:
-l_666:
+l_701:
+l_700:
 ; 236             }
 ; 237             //--
 ; 238             FtpSettingsViewSelectPos = a;
@@ -10277,7 +10687,7 @@ l_666:
 ; 239             FtpSettingsViewSelectLineA(a = 1);
 	ld a, 1
 	call ftpsettingsviewselectlinea
-l_664:
+l_698:
 	pop bc
 	ret
 ; 240         }
@@ -10298,12 +10708,12 @@ ftpsettingsviewselectlinea:
 ; 251         if ((a = FtpSettingsViewSelectPos) == 0) {
 	ld a, (ftpsettingsviewselectpos)
 	or a
-	jp nz, l_669
+	jp nz, l_703
 ; 252             ButtonShadowViewSelectA(a = c);
 	ld a, c
 	call buttonshadowviewselecta
-	jp l_670
-l_669:
+	jp l_704
+l_703:
 ; 253         } else {
 ; 254             FtpSettingsViewByPosBoxValue();
 	call ftpsettingsviewbyposboxvalue
@@ -10311,15 +10721,15 @@ l_669:
 ; 256             if ((a = c) == 0) {
 	ld a, c
 	or a
-	jp nz, l_671
+	jp nz, l_705
 ; 257                 a = FtpSettingsViewColor;
 	ld a, (ftpsettingsviewcolor)
-	jp l_672
-l_671:
+	jp l_706
+l_705:
 ; 258             } else {
 ; 259                 a = FtpSettingsViewInvColor;
 	ld a, (ftpsettingsviewinvcolor)
-l_672:
+l_706:
 ; 260             }
 ; 261             c = a;
 	ld c, a
@@ -10328,7 +10738,7 @@ l_672:
 	ld a, 4
 ; 264             vboxOpenHLDECA();
 	call vboxopenhldeca
-l_670:
+l_704:
 	pop hl
 	pop bc
 	ret
@@ -10345,40 +10755,40 @@ ftpsettingsviewkeya:
 ; 272         if ((a = c) == 0) {
 	ld a, c
 	or a
-	jp nz, l_673
+	jp nz, l_707
 ; 273             if ((a = CurrentViewId) == FtpSettingsViewId) {
 	ld a, (currentviewid)
 	cp 8
-	jp nz, l_675
+	jp nz, l_709
 ; 274                 if ((a = l) == 0x1B) { //ESC выход
 	ld a, l
 	cp 27
-	jp nz, l_677
+	jp nz, l_711
 ; 275                     FtpSettingsViewClose();
 	call ftpsettingsviewclose
-	jp l_678
-l_677:
+	jp l_712
+l_711:
 ; 276                 } else if ((a = l) == 0x0D) { // Выбор
 	ld a, l
 	cp 13
-	jp nz, l_679
+	jp nz, l_713
 ; 277                     if ((a = FtpSettingsViewSelectPos) == 0) { // OK
 	ld a, (ftpsettingsviewselectpos)
 	or a
-	jp nz, l_681
+	jp nz, l_715
 ; 278                         WiFiSettingsViewClose();
 	call wifisettingsviewclose
 ; 279                         if ((a = FtpStateViewStatus) == 0) {
 	ld a, (ftpstateviewstatus)
 	or a
-	jp nz, l_683
+	jp nz, l_717
 ; 280                             needFtpConnect();
 	call needftpconnect
 ; 281                             ThreadsTickNow();
 	call threadsticknow
-l_683:
-	jp l_682
-l_681:
+l_717:
+	jp l_716
+l_715:
 ; 282                         }
 ; 283                     } else { // Переход в редактирование
 ; 284                         FtpSettingsViewByPosBoxValue();
@@ -10389,81 +10799,81 @@ l_681:
 	call editfieldviewshow
 ; 287                         if (a == 1) { // что то изменилось
 	cp 1
-	jp nz, l_685
+	jp nz, l_719
 ; 288                             if ((a = FtpSettingsViewSelectPos) == 5) {
 	ld a, (ftpsettingsviewselectpos)
 	cp 5
-	jp nz, l_687
+	jp nz, l_721
 ; 289                                 ThreadsNetFtpHomeDirUpdate();
 	call threadsnetftphomedirupdate
-	jp l_688
-l_687:
+	jp l_722
+l_721:
 ; 290                             } else if ((a = FtpSettingsViewSelectPos) == 3) {
 	ld a, (ftpsettingsviewselectpos)
 	cp 3
-	jp nz, l_689
+	jp nz, l_723
 ; 291                                 ThreadsNetFtpUserUpdate();
 	call threadsnetftpuserupdate
-	jp l_690
-l_689:
+	jp l_724
+l_723:
 ; 292                             } else if ((a = FtpSettingsViewSelectPos) == 4) {
 	ld a, (ftpsettingsviewselectpos)
 	cp 4
-	jp nz, l_691
+	jp nz, l_725
 ; 293                                 ThreadsNetFtpPasswordUpdate();
 	call threadsnetftppasswordupdate
-	jp l_692
-l_691:
+	jp l_726
+l_725:
 ; 294                             } else if ((a = FtpSettingsViewSelectPos) == 1) { // IP
 	ld a, (ftpsettingsviewselectpos)
 	cp 1
-	jp nz, l_693
+	jp nz, l_727
 ; 295                                 ThreadsNetFtpServerUrlUpdate();
 	call threadsnetftpserverurlupdate
-	jp l_694
-l_693:
+	jp l_728
+l_727:
 ; 296                             } else if ((a = FtpSettingsViewSelectPos) == 2) { // PORT
 	ld a, (ftpsettingsviewselectpos)
 	cp 2
-	jp nz, l_695
+	jp nz, l_729
 ; 297                                 ThreadsNetFtpPortUpdate();
 	call threadsnetftpportupdate
-l_695:
-l_694:
-l_692:
-l_690:
-l_688:
+l_729:
+l_728:
+l_726:
+l_724:
+l_722:
 ; 298                             }
 ; 299                             FtpSettingsViewShowValue();
 	call ftpsettingsviewshowvalue
-l_685:
-l_682:
-	jp l_680
-l_679:
+l_719:
+l_716:
+	jp l_714
+l_713:
 ; 300                         }
 ; 301                     }
 ; 302                 } else if ((a = l) == 0x1A) { //down
 	ld a, l
 	cp 26
-	jp nz, l_697
+	jp nz, l_731
 ; 303                     FtpSettingsViewPosUpdateA(a = 0x01);
 	ld a, 1
 	call ftpsettingsviewposupdatea
-	jp l_698
-l_697:
+	jp l_732
+l_731:
 ; 304                 } else if ((a = l) == 0x19) { //up
 	ld a, l
 	cp 25
-	jp nz, l_699
+	jp nz, l_733
 ; 305                     FtpSettingsViewPosUpdateA(a = 0xFF);
 	ld a, 255
 	call ftpsettingsviewposupdatea
-l_699:
-l_698:
-l_680:
-l_678:
-l_675:
-l_673:
+l_733:
+l_732:
+l_714:
+l_712:
+l_709:
+l_707:
 	pop hl
 	ret
 ; 306                 }
@@ -12691,15 +13101,15 @@ buttonshadowviewselecta:
 ; 60         if ((a = b) == 0) {
 	ld a, b
 	or a
-	jp nz, l_701
+	jp nz, l_735
 ; 61             a = ButtonShadowViewColor;
 	ld a, (buttonshadowviewcolor)
-	jp l_702
-l_701:
+	jp l_736
+l_735:
 ; 62         } else {
 ; 63             a = ButtonShadowViewInvColor;
 	ld a, (buttonshadowviewinvcolor)
-l_702:
+l_736:
 ; 64         }
 ; 65         c = a;
 	ld c, a
@@ -12732,7 +13142,7 @@ buttonshadowviewshowtitlebc:
 ; 78         c = a;
 	ld c, a
 ; 79         do {
-l_703:
+l_737:
 ; 80             a = *hl;
 	ld a, (hl)
 ; 81             d = a;
@@ -12741,24 +13151,24 @@ l_703:
 	inc hl
 ; 83             if (a > 0) {
 	or a
-	jp z, l_706
+	jp z, l_740
 ; 84                 b++;
 	inc b
-l_706:
+l_740:
 ; 85             }
 ; 86             if ((a = b) >= c) {
 	ld a, b
 	cp c
-	jp c, l_708
+	jp c, l_742
 ; 87                 d = 0;
 	ld d, 0
-l_708:
-l_704:
+l_742:
+l_738:
 ; 88             }
 ; 89         } while ((a = d) > 0);
 	ld a, d
 	or a
-	jp nz, l_703
+	jp nz, l_737
 ; 90         a = ButtonShadowViewDX;
 	ld a, (buttonshadowviewdx)
 ; 91         a -= b;
@@ -12882,7 +13292,7 @@ vboxclearcash:
 ; 47     push_pop(a) {
 	push af
 ; 48         do {
-l_710:
+l_744:
 ; 49             a = vboxBLW;
 	ld a, 16
 ; 50             a |= vboxERA;
@@ -12891,10 +13301,10 @@ l_710:
 	or 4
 ; 52             vboxCall();
 	call vboxcall
-l_711:
+l_745:
 ; 53         } while (a == 0x00);
 	or a
-	jp z, l_710
+	jp z, l_744
 	pop af
 	ret
 ; 54     }
@@ -12924,17 +13334,17 @@ vboxborderhlde:
 ; 68             b = 2;
 	ld b, 2
 ; 69             do {
-l_713:
+l_747:
 ; 70                 printMyChatA(a = 0xCD);
 	ld a, 205
 	call printmychata
 ; 71                 b++;
 	inc b
-l_714:
+l_748:
 ; 72             } while ((a = b) < d);
 	ld a, b
 	cp d
-	jp c, l_713
+	jp c, l_747
 ; 73             printMyChatA(a = 0xBB);
 	ld a, 187
 	call printmychata
@@ -12963,17 +13373,17 @@ l_714:
 ; 84             b = 2;
 	ld b, 2
 ; 85             do {
-l_716:
+l_750:
 ; 86                 printMyChatA(a = 0xCD);
 	ld a, 205
 	call printmychata
 ; 87                 b++;
 	inc b
-l_717:
+l_751:
 ; 88             } while ((a = b) < d);
 	ld a, b
 	cp d
-	jp c, l_716
+	jp c, l_750
 ; 89             printMyChatA(a = 0xBC);
 	ld a, 188
 	call printmychata
@@ -12997,7 +13407,7 @@ l_717:
 ; 98             b = 2;
 	ld b, 2
 ; 99             do {
-l_719:
+l_753:
 ; 100                 printMyChatA(a = 0xBA);
 	ld a, 186
 	call printmychata
@@ -13013,11 +13423,11 @@ l_719:
 	ld (mycharposy), a
 ; 106                 b++;
 	inc b
-l_720:
+l_754:
 ; 107             } while ((a = b) < e);
 	ld a, b
 	cp e
-	jp c, l_719
+	jp c, l_753
 	pop de
 	pop hl
 ; 108         }
@@ -13044,7 +13454,7 @@ l_720:
 ; 119             b = 2;
 	ld b, 2
 ; 120             do {
-l_722:
+l_756:
 ; 121                 printMyChatA(a = 0xBA);
 	ld a, 186
 	call printmychata
@@ -13060,11 +13470,11 @@ l_722:
 	ld (mycharposy), a
 ; 127                 b++;
 	inc b
-l_723:
+l_757:
 ; 128             } while ((a = b) < e);
 	ld a, b
 	cp e
-	jp c, l_722
+	jp c, l_756
 	pop de
 	pop hl
 	pop bc
@@ -13094,7 +13504,7 @@ validvbox:
 	or a
 ; 144     if (a == 0) {
 	or a
-	jp nz, l_725
+	jp nz, l_759
 ; 145         push_pop(bc, hl) {
 	push bc
 	push hl
@@ -13104,7 +13514,7 @@ validvbox:
 ; 147             b = 0;
 	ld b, 0
 ; 148             do {
-l_727:
+l_761:
 ; 149                 a = 'A';
 	ld a, 65
 ; 150                 a += b;
@@ -13120,26 +13530,26 @@ l_727:
 ; 155                 if ((a = b) == 4) {
 	ld a, b
 	cp 4
-	jp nz, l_730
+	jp nz, l_764
 ; 156                     c = 1;
 	ld c, 1
-l_730:
-l_728:
+l_764:
+l_762:
 ; 157                 }
 ; 158             } while ((a = c) == 0);
 	ld a, c
 	or a
-	jp z, l_727
+	jp z, l_761
 ; 159             if ((a = c) == 0xFF) {
 	ld a, c
 	cp 255
-	jp nz, l_732
+	jp nz, l_766
 ; 160                 loadVBOX();
 	call loadvbox
-l_732:
+l_766:
 	pop hl
 	pop bc
-l_725:
+l_759:
 	ret
 ; 161             }
 ; 162         }
@@ -13224,12 +13634,12 @@ vboxfl:
 ; 204 uint16_t vboxAddr = 0xF000;
 vboxaddr:
 	dw 61440
-; 134 uint8_t strOK[] = "Ok";
+; 136 uint8_t strOK[] = "Ok";
 strok:
 	db 79
 	db 107
 	ds 1
-; 135 uint8_t strError[] = "Error!";
+; 137 uint8_t strError[] = "Error!";
 strerror:
 	db 69
 	db 114
@@ -13238,7 +13648,7 @@ strerror:
 	db 114
 	db 33
 	ds 1
-; 136 uint8_t strWarning[] = "Warning!";
+; 138 uint8_t strWarning[] = "Warning!";
 strwarning:
 	db 87
 	db 97
@@ -13249,7 +13659,7 @@ strwarning:
 	db 103
 	db 33
 	ds 1
-; 137 uint8_t strUtf8[] = {0xd0 ,0x9f ,0xd1 ,0x80 ,0xd0 ,0xb8 ,0xd0 ,0xb2 ,0xd0 ,0xb5 ,0xd1 ,0x82 ,0x20 ,0xd0 ,0x9c ,0xd0 ,0xb8 ,0xd1 ,0x80 , 0x00}; //"Привет Мир!"
+; 139 uint8_t strUtf8[] = {0xd0 ,0x9f ,0xd1 ,0x80 ,0xd0 ,0xb8 ,0xd0 ,0xb2 ,0xd0 ,0xb5 ,0xd1 ,0x82 ,0x20 ,0xd0 ,0x9c ,0xd0 ,0xb8 ,0xd1 ,0x80 , 0x00}; //"Привет Мир!"
 strutf8:
 	db 208
 	db 159
@@ -13271,4 +13681,4 @@ strutf8:
 	db 209
 	db 128
 	db 0
- savebin "test.ORD", 0x00f0, 0x300f
+ savebin "test.ORD", 0x00f0, 0x3210

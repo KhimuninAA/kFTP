@@ -547,6 +547,69 @@ void sendHLToAParserCheckSum() {
     }
 }
 
+/// Get All State
+/// 1 byte : Test = 0x55
+/// 2 byre : All State : WIFIConnect = 0x01; FtpConnect = 0x02;
+/// 3 byte : Reserved
+/// 4 byte : SUM
+void getAllStatusParser() {
+    getAllStatusParserCheckSum();
+    if ((a = allStatusParserCheckSumState) == 1) {
+        push_pop(de, bc) {
+            de = ESP_I2S_BUFFER;
+            // Test byte
+            a = *de;
+            if (a == 0x55) {
+                de++;
+                // -- All State
+                a = *de;
+                b = a;
+                // -- WIFIConnect
+                a = b;
+                a &= 0x01;
+                ThreadsNetSetWiFiStateA();
+                // -- FtpConnect
+                a = b;
+                a &= 0x02;
+                cyclic_rotate_right(a, 1);
+                ThreadsNetSetFtpStateA();
+                // -- End state
+                de++;
+                // -- Reserve
+            } else {
+                a = 0;
+                allStatusParserCheckSumState = a;
+            }
+        }
+    }
+}
+
+void getAllStatusParserCheckSum() {
+    push_pop(de, bc) {
+        de = ESP_I2S_BUFFER;
+        //--
+        b = 3;
+        c = 0;
+        do {
+            a = *de;
+            a += c;
+            c = a;
+            de++;
+            b--;
+        } while ((a = b) > 0);
+        a = *de;
+        if (a == c) {
+            a = 1;
+            allStatusParserCheckSumState = a;
+        } else {
+            a = 0;
+            allStatusParserCheckSumState = a;
+        }
+    }
+}
+
+uint8_t allStatusParserCheckSumState = 0;
+
 uint8_t sendHLToAParserIsOk = 0;
 uint8_t sendHLToAParserCheckSumState = 0;
 
